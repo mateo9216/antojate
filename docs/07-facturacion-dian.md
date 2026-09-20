@@ -93,16 +93,43 @@ decidir cuándo nace la factura:
 
 Son dos comportamientos distintos del negocio, no dos formas de programarlo.
 
-### 2.3 Pedir la identificación del comprador
+### 2.3 Pedir la identificación del comprador — y solo lo justo
 
 El checkout pide nombre, correo, celular, ciudad y dirección. **No pide
-documento de identidad**, y una factura electrónica nominal lo necesita.
+documento de identidad**, y la factura lo necesita.
 
-Hay que agregar al checkout tipo y número de documento, y decidir qué pasa con
-quien no lo quiera dar. Cada campo que se agrega al checkout cuesta ventas, así
-que la decisión no es solo técnica.
+Pero acá la norma no solo obliga: **también limita**. Si el comprador quiere la
+factura a su nombre, **solo se le pueden pedir tres datos**: nombre o razón
+social, tipo y número de identificación, y correo electrónico. Pedir más es una
+infracción. Y si no pide factura a su nombre, **no se le pueden pedir esos datos
+en absoluto**.
 
----
+Eso define el diseño, y de paso resuelve la preocupación de que pedir la cédula
+espante ventas:
+
+```
+  [ ] ¿Necesitás la factura a tu nombre?
+
+   Sin marcar  →  se factura a "consumidor final", con el NIT 222222222222.
+                  No se pide ningún dato extra.
+   Marcado     →  aparecen exactamente tres campos: nombre, tipo y número de
+                  documento, y correo.
+```
+
+Un detalle que conviene tener presente: **cuando se factura a consumidor final
+o sin NIT, la dirección de entrega es obligatoria en el XML**. Eso el checkout
+ya lo captura, así que no hay trabajo nuevo ahí.
+
+### 2.4 Y hay que facturar en el momento de la venta
+
+La DIAN lo ha dicho expresamente para comercio electrónico: la factura se
+expide **cuando se perfecciona la venta**, es decir cuando comprador y vendedor
+acuerdan bien y precio por el canal digital. **No hay plazo de gracia** y la
+entrega física del producto no es lo que dispara la obligación.
+
+Para la arquitectura esto significa una cosa concreta: **el disparador es el
+webhook de pago de Wompi**, no un proceso nocturno. Y tiene una consecuencia
+incómoda para la ruta manual, que está dicha más abajo.
 
 ## 3. Qué exige la norma
 
@@ -117,11 +144,30 @@ Verificado contra el micrositio oficial de la DIAN (septiembre de 2026).
 El fundamento es el **artículo 615 del Estatuto Tributario** y el **artículo
 1.6.1.4.1 del Decreto Único Reglamentario 1625 de 2016**.
 
-La regla general, entonces, es que **hay que facturar**. Las excepciones son
-taxativas y **no las va a determinar este documento**: las confirma el contador
-del cliente según su régimen. La DIAN también contempla el caso de quien no
-está obligado pero quiere facturar electrónicamente de forma voluntaria, y en
-ese caso sigue el mismo proceso.
+La norma nombra expresamente, entre los obligados, a «los comerciantes,
+importadores o prestadores de servicios o **en las ventas a consumidores
+finales**». Una tienda en línea que vende productos físicos es comerciante:
+**está obligada, y no hay un régimen de "comercio pequeño" que la exima por ser
+pequeña**.
+
+**La única salida real** es que el dueño sea **persona natural no responsable de
+IVA**, y exige cumplir **todas** estas condiciones a la vez: ingresos brutos por
+debajo de 3.500 UVT (unos $183 millones en 2026), un solo establecimiento, sin
+franquicia ni concesión, no ser usuario aduanero, sin contratos individuales que
+superen ese tope, y **consignaciones o inversiones financieras por debajo de
+3.500 UVT**.
+
+Esa última condición es la que rompe el esquema en un e-commerce: **todo lo que
+cobra Wompi entra por cuenta bancaria**. Basta con vender bien un año para
+caerse de la exención y quedar obligado.
+
+Y ojo con algo: si quien no está obligado **decide** facturar igual, la norma
+lo considera obligado para efectos tributarios y le exige cumplir todos los
+requisitos. No hay término medio.
+
+**Conclusión práctica:** salvo que el dueño sea persona natural con facturación
+muy baja y quiera quedarse ahí, hay que planear como obligado desde el día uno.
+Si constituye una SAS, está obligado sin discusión.
 
 ### Qué documento se emite
 
@@ -133,10 +179,23 @@ Para esta tienda hay dos que importan:
 
 - **Factura electrónica de venta.** Es la que corresponde a una venta a
   distancia con datos del comprador.
-- **Nota crédito electrónica.** Es la que se emite cuando hay que anular o
-  devolver. **Y esto sí es seguro que va a pasar**: el derecho de retracto de
-  la Ley 1480 da 5 días hábiles al comprador en ventas a distancia. Una tienda
-  en línea necesita notas crédito desde el primer mes.
+- **Nota crédito electrónica.** Es el mecanismo para anular o devolver, y hay
+  que construirla desde el principio, por cuatro motivos:
+  1. **Derecho de retracto** (Ley 1480, art. 47): en ventas a distancia el
+     comprador tiene 5 días hábiles desde la entrega y hay que devolverle
+     **todo** lo pagado, sin descuentos, en máximo 30 días. Hay excepciones
+     —perecederos, bienes de uso personal, productos personalizados— que pueden
+     cubrir buena parte de un catálogo de alimentos, **pero eso se valida
+     producto por producto con el abogado del cliente, no se asume**.
+  2. **Reversión del pago** (Ley 1480, art. 51): aplica directamente porque se
+     cobra con PSE y tarjeta.
+  3. Devoluciones de mercancía.
+  4. **El set de pruebas de habilitación la exige**, junto con la nota débito.
+     O sea: hay que implementar ambas aunque la nota débito casi no se use en
+     una tienda que cobra por anticipado.
+
+  Una regla que condiciona el diseño: la nota crédito es el mecanismo de
+  anulación, y **el número de la factura anulada no se puede reutilizar**.
 
 Los **documentos equivalentes** (entre ellos el tiquete POS) están regulados
 por la **Resolución 000165 de 2023** —que derogó la 000042 de 2020, así que si
@@ -205,12 +264,47 @@ proceso tiene siete pasos:
 El paso 4 es el que se subestima siempre: **el software tiene que pasar un set
 de pruebas contra la DIAN antes de poder emitir una sola factura real.**
 
-Dos precisiones sobre ese set, que circulan mal: **no hay límite de intentos**,
-y **la DIAN no publica un número fijo de documentos**. El portal los asigna
-junto con el identificador del set. La cifra de "60 facturas" que aparece en
-blogs y foros está obsoleta; no planifiques con ella.
+Tres precisiones sobre ese set, porque circulan mal:
+
+- **No hay límite de intentos ni plazo máximo.** Se reintenta hasta pasar.
+- **La DIAN no publica un número fijo de documentos** para software propio: de
+  hecho tres páginas oficiales suyas se contradicen. El número que manda es el
+  que muestra el portal en el detalle del set. **No le prometas una cifra al
+  cliente.**
+- **Se exige igual si se usa un proveedor.** La diferencia es que el proveedor
+  lo corre por vos, y suele ser cuestión de horas.
+
+Y sobre cuánto tarda todo el trámite: **la DIAN no publica ningún plazo**. Las
+cifras que circulan —"tres meses de pruebas", "cinco días hábiles para aprobar"—
+**no existen en la norma**. El cuello de botella real es conseguir el
+certificado y que el software genere documentos correctos, no la respuesta de
+la DIAN, que es automática. No le des al cliente un número más preciso que eso.
 
 ---
+
+### Qué pasa si no se factura
+
+Conviene tenerlo claro, porque es lo que hace que la conversación con el
+cliente deje de postergarse.
+
+- **Cierre del establecimiento** «o sitio donde se ejerza la actividad»:
+  3 días por no expedir factura estando obligado, o por expedirla sin los
+  requisitos. Se puede sustituir pagando una multa del **5% de los ingresos
+  operacionales del mes anterior** —y esa multa aplica sin importar que no haya
+  local físico.
+- **Facturar sin los requisitos legales:** 1% del valor de las operaciones,
+  con tope de 950 UVT (unos $49,7 millones en 2026).
+
+**Pero el riesgo caro es otro.** Sin factura con los requisitos, **no proceden
+costos ni deducciones en renta, ni IVA descontable**. Traducido: el peligro real
+no es que le cierren la tienda al cliente, es que en una fiscalización le
+rechacen los costos y termine pagando renta sobre el ingreso bruto. Eso suele
+ser un orden de magnitud peor que la sanción formal.
+
+Lo mismo aplica al revés, y por eso vale nombrarlo: cuando la tienda **le
+compre** a alguien que no está obligado a facturar —un proveedor pequeño, un
+domiciliario independiente— hace falta el **documento soporte en adquisiciones
+a no obligados**, o esa compra no es deducible.
 
 ## 4. Cómo funciona por dentro
 
@@ -292,8 +386,16 @@ suponerse:
 - **El certificado de firma digital es gratis** por esta vía, con vigencia de
   dos años y trámite virtual.
 
-**El problema.** Es una herramienta web, con carga por plantillas. **No tiene
-API.** Alguien tendría que pasar cada pedido a mano.
+**El problema, y es más fuerte de lo que parece.** No es solo que no tenga API:
+sus propios términos y condiciones **prohíben conectarle software**. Textual:
+«el usuario **no podrá subir o cargar archivos planos ni establecer conexión
+desde la solución gratuita con ninguna aplicación de software**». Las
+"plantillas" que anuncia son captura rápida dentro del portal, no una carga
+masiva. Alguien tiene que pasar cada pedido a mano, y punto.
+
+Dos limitaciones más, del mismo documento: **no almacena los documentos**
+—se descargan al generarlos y la conservación queda por cuenta del usuario— y
+**la cuenta se inactiva si no se ingresa en seis meses**.
 
 - **Desarrollo:** ninguno. Con un reporte de pedidos listos para facturar,
   1-3 días-persona.
@@ -310,8 +412,21 @@ para arrancar, y conviene entrar con los ojos abiertos:
 - **Las devoluciones y notas crédito viven solo en la otra herramienta.**
 - **El comprador no recibe su factura al pagar**, sino cuando alguien la emita.
 
-Nada de eso impide arrancar así. Pero define el disparador para automatizar:
+**Y una tensión que hay que poner sobre la mesa:** la DIAN ha dicho para
+comercio electrónico que la factura se expide **cuando se perfecciona la venta,
+sin plazo de gracia**. Transcribir a mano introduce una demora. Que una emisión
+manual el mismo día sea aceptable es **exactamente el tipo de pregunta para el
+contador del cliente**, y hay que hacérsela antes de adoptar esta ruta, no
+después.
+
+Nada de esto impide arrancar así. Pero define el disparador para automatizar:
 **cuando ese desorden empiece a costar más que el desarrollo.**
+
+**Un dato que mejora mucho esta ruta:** los modos de operación **no son
+excluyentes**. Se puede estar habilitado en la solución gratuita **y** en otro
+modo a la vez, usando **prefijos de numeración distintos**. O sea que arrancar
+acá no cierra ninguna puerta, y después la gratuita queda como plan de
+contingencia manual si el proveedor se cae.
 
 ### Ruta B — Un proveedor tecnológico por API
 
@@ -330,9 +445,12 @@ Del relevamiento, lo que hay que saber antes de elegir:
 
 Dos advertencias que salieron del contraste y que conviene tener presentes:
 
-- **El precio bajo que Alegra publica (~$17.900/mes) es el de su aplicación
-  manual, no el de la API.** El producto para integrar es otro y su precio no
-  está publicado. Es un error fácil de cometer al costear.
+- **Cuidado con el precio de Alegra.** Publica planes desde ~$17.900/mes con
+  facturas ilimitadas y certificado incluido, pero esos son los de su
+  **aplicación**. Para integrar desde un sistema propio tienen además un
+  producto para casas de software cuyo precio **no está publicado**. Al cotizar,
+  **preguntá explícitamente cuál de los dos aplica**: es un error fácil de
+  cometer y cambia el costo del proyecto.
 - **Factus no aparece en el registro oficial de proveedores**, lo que sugiere
   modalidad de software propio. No lo descarta —su API es la más cómoda del
   lote y su sandbox es abierto—, pero **hay que preguntárselo antes**.
@@ -368,6 +486,11 @@ ser reescribir la integración.
 
 **Qué es.** Construir nosotros el UBL 2.1, la firma digital, el consumo de los
 servicios web, el CUFE, la representación gráfica y pasar el set de pruebas.
+
+**Y hay que hablarle a la DIAN en SOAP.** No expone API REST: todo va por
+servicios web SOAP con WS-Security. Sumale armar el UBL 2.1, calcular el CUFE
+con SHA-384, firmar en XAdES-EPES con un certificado de entidad acreditada, y
+manejar los rangos de numeración y las contingencias.
 
 **Es técnicamente posible en este stack.** Se verificó que las librerías
 necesarias funcionan en Python 3.14: `xmlsec` publica ruedas `cp314` y
