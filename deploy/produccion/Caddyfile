@@ -1,0 +1,32 @@
+# Caddy pide y renueva el certificado de Let's Encrypt solo. No hay que
+# instalar certbot ni acordarse de renovar nada.
+{
+	email {$CORREO_TLS}
+}
+
+{$DOMINIO} {
+	encode zstd gzip
+
+	# Todo va al nginx de Frappe, que ya sabe repartir entre la aplicación,
+	# los archivos estáticos y el websocket.
+	reverse_proxy frontend:8080
+
+	request_body {
+		max_size 50MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	log {
+		output file /data/acceso.log {
+			roll_size 20MiB
+			roll_keep 10
+		}
+	}
+}

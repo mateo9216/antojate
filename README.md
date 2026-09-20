@@ -5,17 +5,22 @@ con cobros por **Nequi, Bancolombia, PSE y tarjeta** a través de Wompi.
 
 ## Arrancar
 
-Solo necesitás Docker instalado.
+Solo necesitás **Docker** y **git**. Nada de Python, Node, MariaDB ni Frappe
+en tu máquina: todo corre en contenedores.
 
 ```bash
-cd deploy
-./scripts/bootstrap.sh                                  # levanta todo
-./scripts/bench console                                 # y luego:
->>> from antojate.demo import cargar; cargar()          # datos de ejemplo
+git clone <URL-DEL-REPOSITORIO> antojate
+cd antojate/deploy
+./scripts/bootstrap.sh --demo
 ```
 
-Abrí **http://antojate.localhost:8080/tienda**.
+Abrí **http://localhost:8080/tienda**.
 Escritorio en `/desk`, con `Administrator` / `admin`.
+
+Primera vez: entre 15 y 30 minutos, casi todo esperando la descarga de la
+imagen de ERPNext. Los pasos detallados para **macOS y Windows**, con los
+problemas típicos de cada uno, están en
+[`docs/05-instalacion-desarrolladores.md`](docs/05-instalacion-desarrolladores.md).
 
 Para mostrárselo al cliente desde internet, sin pagar hosting:
 
@@ -32,15 +37,22 @@ antojate/
 │   ├── 01-despliegue.md                Cómo se levanta y cómo se publica
 │   ├── 02-wompi.md                     Pagos: afiliación, llaves, integración
 │   ├── 03-guia-del-cliente.md          Para quien carga productos y despacha
-│   └── 04-pruebas-de-interfaz.md       Pruebas en navegador y videos narrados
+│   ├── 04-pruebas-de-interfaz.md       Pruebas en navegador y videos narrados
+│   ├── 05-instalacion-desarrolladores.md   Montarlo en macOS o Windows
+│   ├── 06-produccion.md                Sacarlo a internet y vender de verdad
+│   └── diagramas/                      Flujo de compra y clases (.drawio)
 ├── pruebas-ui/              Pruebas de navegador con Playwright
 │   ├── tests/               Cuatro recorridos, narrados y grabados
 │   ├── videos/              Los videos + index.html para verlos
 │   └── correr.sh            Corre todo dentro de Docker
 ├── deploy/                  Todo lo necesario para correrlo
-│   ├── compose.yaml         El stack
+│   ├── compose.yaml         El stack local
 │   ├── Dockerfile           ERPNext + la app custom
-│   └── scripts/             bootstrap, tunnel, migrar, recargar, pruebas
+│   ├── scripts/             bootstrap, tunnel, migrar, recargar, pruebas
+│   └── produccion/          El stack del servidor del cliente
+│       ├── compose.yaml     Con Caddy y HTTPS automático
+│       ├── Caddyfile
+│       └── scripts/         crear-sitio, desplegar, respaldar, restaurar
 └── apps/antojate/           La app de Frappe
     └── antojate/
         ├── api/             catalogo.py · carrito.py · pagos.py
@@ -87,8 +99,28 @@ Los recorridos de `pruebas-ui` dejan videos narrados en `pruebas-ui/videos/`.
 Son pruebas de verdad: si la tienda se rompe, fallan y el video no se genera.
 Abrí `pruebas-ui/videos/index.html` para verlos.
 
+## Llevarlo a producción
+
+```bash
+# en el servidor, con el dominio ya apuntando a su IP
+git clone <URL-DEL-REPOSITORIO> antojate
+cd antojate/deploy/produccion
+cp .env.example .env && nano .env
+./scripts/crear-sitio.sh
+```
+
+Caddy pide el certificado de Let's Encrypt solo. El runbook completo —servidor,
+DNS, IVA, llaves de Wompi, correo saliente, respaldos, lo legal y el checklist
+de salida— está en [`docs/06-produccion.md`](docs/06-produccion.md).
+
+Actualizaciones posteriores: `git pull && ./scripts/desplegar.sh`. Respalda,
+migra y verifica que la tienda responda antes de darse por terminado.
+
 ## Estado
 
-Funciona de punta a punta en local, con datos de ejemplo y pruebas en verde.
-Falta que el cliente se afilie a Wompi para reemplazar las llaves de prueba por
-las reales. Ver `docs/02-wompi.md` para el checklist de afiliación.
+Funciona de punta a punta en local, con datos de ejemplo y todas las pruebas en
+verde. Para vender de verdad faltan tres cosas que no dependen del código:
+
+1. Que el cliente se afilie a Wompi (checklist en `docs/02-wompi.md`).
+2. Un servidor y un dominio.
+3. Definir cómo se factura ante la DIAN, que hoy está fuera de lo construido.

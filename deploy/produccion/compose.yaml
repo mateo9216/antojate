@@ -1,0 +1,179 @@
+# Stack de PRODUCCIÓN de Antójate.
+#
+# Diferencias con el de desarrollo, y por qué:
+#
+#   · El código NO se monta desde el disco: va dentro de la imagen. En
+#     desarrollo el bind mount es cómodo; en producción significa que tocar un
+#     archivo en el servidor cambia la aplicación sin dejar rastro en git.
+#   · Caddy adelante, resolviendo HTTPS solo. Nada más se asoma a internet:
+#     la base de datos y Redis no publican puertos.
+#   · Sin valores por defecto en las contraseñas. Si falta una, el stack no
+#     levanta, que es mejor que levantar con "admin".
+#   · restart: always, para que un reinicio del servidor no deje la tienda caída.
+
+x-antojate: &antojate
+  image: ${ANTOJATE_IMAGE:?falta ANTOJATE_IMAGE}
+  build:
+    context: ../..
+    dockerfile: deploy/Dockerfile
+    args:
+      ERPNEXT_VERSION: ${ERPNEXT_VERSION:-v16.17.0}
+  networks: [antojate]
+  restart: always
+  volumes:
+    - sites:/home/frappe/frappe-bench/sites
+    - logs:/home/frappe/frappe-bench/logs
+  environment:
+    DB_HOST: db
+    DB_PORT: "3306"
+    FRAPPE_REDIS_CACHE: redis://redis-cache:6379
+    FRAPPE_REDIS_QUEUE: redis://redis-queue:6379
+
+services:
+  # --- Entrada pública ------------------------------------------------------
+  caddy:
+    image: caddy:2-alpine
+    networks: [antojate]
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMINIO: ${DOMINIO:?falta DOMINIO}
+      CORREO_TLS: ${CORREO_TLS:?falta CORREO_TLS}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - frontend
+
+  # --- Datos ----------------------------------------------------------------
+  db:
+    image: mariadb:11.8
+    networks: [antojate]
+    restart: always
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?falta DB_ROOT_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?falta DB_ROOT_PASSWORD}
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 15s
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - db-data:/var/lib/mysql
+
+  redis-cache:
+    image: redis:6.2-alpine
+    networks: [antojate]
+    restart: always
+
+  redis-queue:
+    image: redis:6.2-alpine
+    networks: [antojate]
+    restart: always
+    volumes:
+      - redis-queue-data:/data
+
+  # --- Aplicación -----------------------------------------------------------
+  configurator:
+    <<: *antojate
+    restart: "no"
+    entrypoint: ["bash", "-c"]
+    command:
+      - >
+        ls -1 apps > sites/apps.txt;
+        bench set-config -g db_host $$DB_HOST;
+        bench set-config -gp db_port $$DB_PORT;
+        bench set-config -g redis_cache "redis://redis-cache:6379";
+        bench set-config -g redis_queue "redis://redis-queue:6379";
+        bench set-config -g redis_socketio "redis://redis-queue:6379";
+        bench set-config -gp socketio_port 9000;
+        bench set-config -g developer_mode 0;
+        echo "configurator: listo";
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend:
+    <<: *antojate
+    command:
+      - /home/frappe/frappe-bench/env/bin/gunicorn
+      - --chdir=/home/frappe/frappe-bench/sites
+      - --bind=0.0.0.0:8000
+      - --threads=4
+      - --workers=${GUNICORN_WORKERS:-2}
+      - --worker-class=gthread
+      - --worker-tmp-dir=/dev/shm
+      - --timeout=120
+      - --preload
+      - frappe.app:application
+    depends_on:
+      configurator:
+        condition: service_completed_successfully
+
+  websocket:
+    <<: *antojate
+    command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
+    depends_on:
+      configurator:
+        condition: service_completed_successfully
+
+  scheduler:
+    <<: *antojate
+    command: ["bench", "schedule"]
+    depends_on:
+      configurator:
+        condition: service_completed_successfully
+
+  queue-short:
+    <<: *antojate
+    command: ["bench", "worker", "--queue", "short,default"]
+    depends_on:
+      configurator:
+        condition: service_completed_successfully
+
+  queue-long:
+    <<: *antojate
+    command: ["bench", "worker", "--queue", "long,default,short"]
+    depends_on:
+      configurator:
+        condition: service_completed_successfully
+
+  frontend:
+    <<: *antojate
+    command: ["nginx-entrypoint.sh"]
+    environment:
+      BACKEND: backend:8000
+      SOCKETIO: websocket:9000
+      FRAPPE_SITE_NAME_HEADER: ${DOMINIO:?falta DOMINIO}
+      # Caddy es quien ve al visitante; sin esto los registros guardan la IP
+      # de Caddy en vez de la del comprador.
+      UPSTREAM_REAL_IP_ADDRESS: 0.0.0.0/0
+      UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
+      UPSTREAM_REAL_IP_RECURSIVE: "on"
+      PROXY_READ_TIMEOUT: 120
+      CLIENT_MAX_BODY_SIZE: 50m
+    # Sin `ports`: al exterior solo se asoma Caddy.
+    depends_on:
+      - backend
+      - websocket
+
+volumes:
+  sites:
+  logs:
+  db-data:
+  redis-queue-data:
+  caddy-data:
+  caddy-config:
+
+networks:
+  antojate:
+    name: antojate-prod
