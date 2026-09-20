@@ -204,7 +204,9 @@ Para esta tienda hay dos que importan:
      **pero eso se valida producto por producto con el abogado del cliente, no
      se asume**.
   2. **Reversión del pago** (Ley 1480, art. 51): aplica directamente porque se
-     cobra con PSE y tarjeta.
+     cobra con PSE y tarjeta. El comprador tiene **5 días hábiles** para
+     reclamar, y quienes participan del pago tienen **15 días hábiles** para
+     hacer efectiva la reversión.
   3. Devoluciones de mercancía.
   4. **El set de pruebas de habilitación la exige**, junto con la nota débito.
      O sea: hay que implementar ambas aunque la nota débito casi no se use en
@@ -212,6 +214,19 @@ Para esta tienda hay dos que importan:
 
   Una regla que condiciona el diseño: la nota crédito es el mecanismo de
   anulación, y **el número de la factura anulada no se puede reutilizar**.
+
+  Para cuando toque programarlo, los conceptos que admite la nota crédito son
+  seis: devolución parcial, **anulación de la factura**, rebaja o descuento,
+  ajuste de precio, descuento por pronto pago y descuento por volumen. No hay
+  un concepto "otros". Además hay dos tipos: **con referencia a la factura o
+  sin ella**, y **la anulación exige el que lleva referencia**, apuntando al
+  CUFE original.
+
+  El mapeo para esta tienda: una devolución parcial es el concepto de devolución
+  parcial; **un retracto es una anulación**, porque deshace el contrato entero.
+  Ojo: esa equivalencia es de contenido económico, la norma tributaria no
+  menciona el retracto. Confirmá los códigos exactos contra el anexo del
+  proveedor que se contrate.
 
 Los **documentos equivalentes** (entre ellos el tiquete POS) están regulados
 por la **Resolución 000165 de 2023** —que derogó la 000042 de 2020, así que si
@@ -303,14 +318,48 @@ la DIAN, que es automática. No le des al cliente un número más preciso que es
 Conviene tenerlo claro, porque es lo que hace que la conversación con el
 cliente deje de postergarse.
 
-- **Cierre del establecimiento** «o sitio donde se ejerza la actividad»:
-  3 días por no expedir factura estando obligado, o por expedirla sin los
-  requisitos. Se puede sustituir pagando una multa del **5% de los ingresos
-  operacionales del mes anterior** —y esa multa aplica sin importar que no haya
-  local físico. La base son los ingresos **del contribuyente**, no solo los del
-  punto sancionado: da igual con un solo canal, importa si mañana hay varios.
-- **Facturar sin los requisitos legales:** 1% del valor de las operaciones,
-  con tope de 950 UVT (unos $49,7 millones en 2026).
+Son **tres conductas distintas**, con tres sanciones distintas:
+
+| Conducta | Sanción | Tope |
+|---|---|---|
+| **No expedir** la factura | Cierre de 3 días | Sustituible por multa del **5% de los ingresos operacionales del mes anterior** |
+| **Expedirla sin los requisitos** | 1% de lo facturado | 950 UVT (~$49,7 millones en 2026) |
+| **No transmitirla, o transmitirla mal** | 1% de lo no informado (0,7% si es errónea, 0,5% si es extemporánea) | **7.500 UVT (~$392,8 millones)** |
+
+Sobre la multa sustitutiva del cierre: aplica **sin importar que no haya local
+físico**, y la base son los ingresos **del contribuyente**, no solo los del
+punto sancionado.
+
+**La tercera fila es la que nos toca a nosotros.** Una tienda que genere la
+factura pero falle al transmitirla —webhook caído, reintentos mal hechos, una
+cola sin lugar donde caigan los fallos— cae ahí. **Es riesgo puro de
+ingeniería, y su tope es ocho veces el de facturar mal.**
+
+De ahí sale un requisito, no una recomendación: **el sistema necesita
+reintentos, monitoreo y una alerta sobre documentos generados que no llegaron a
+quedar validados.** Un documento emitido y no transmitido no puede quedar en
+silencio esperando a que alguien lo note.
+
+### Qué campo roto cuesta multa y cuál cuesta cierre
+
+Los requisitos de la factura se parten en dos grupos, y la diferencia importa:
+
+- **Cierre directo, sin multa previa:** NIT del vendedor, NIT del adquirente con
+  el IVA discriminado, **numeración consecutiva**, **fecha de expedición**,
+  **descripción de los artículos** y **valor total**.
+- **Multa primero, cierre solo por reincidencia:** la denominación «factura de
+  venta», los datos del impresor y la calidad de retenedor de IVA.
+
+Leelo de nuevo mirando la primera lista: **son exactamente los campos que más
+fácil se rompen en una integración automática.** Un consecutivo que se salta,
+una fecha con la zona horaria equivocada, un total que no cuadra por redondeo.
+Ahí es donde van las validaciones más duras, no en los campos cosméticos.
+
+Una noticia buena, por contraste: la DIAN ha conceptuado que **los errores en la
+identificación del comprador no son conducta sancionable**, siempre que la
+factura cumpla los demás requisitos. Si alguien teclea mal su cédula en el
+checkout, se corrige anulando con nota crédito y expidiendo de nuevo. Eso le
+quita presión al diseño de ese campo.
 
 **Pero el riesgo caro es otro.** Sin factura con los requisitos, **no proceden
 costos ni deducciones en renta, ni IVA descontable**. Traducido: el peligro real

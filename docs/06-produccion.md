@@ -343,6 +343,26 @@ lo es, antes de abrir la tienda.
       el envío de una devolución.
 - [ ] **Datos del comercio visibles**: razón social, NIT, dirección y teléfono.
 
+### Lo que la ley le exige al sitio, no al facturador
+
+La Ley 2439 de 2024 reformó las obligaciones de quien vende por medios
+electrónicos. Varias son **funciones de la tienda que hoy no existen**, así que
+van al backlog, no a la carpeta del abogado:
+
+- [ ] **Precio total con impuestos, y los gastos de envío por separado.**
+- [ ] Informar el **derecho de retracto y el procedimiento** para ejercerlo.
+- [ ] **Resumen del pedido descargable** antes de cerrar la compra.
+- [ ] **Acuse de recibo del pedido**, a más tardar el día calendario siguiente.
+      Hoy no se manda ningún correo: esto y la confirmación de pago son la misma
+      pieza pendiente.
+- [ ] **Canal de reclamaciones con radicado, fecha y hora.**
+- [ ] Entregar en el plazo pactado o, si no se pactó, en 30 días calendario.
+- [ ] **Enlace visible a la SIC.**
+- [ ] Conservar prueba de la relación comercial.
+
+Ninguna es difícil por separado. Juntas son unos días de trabajo, y conviene
+hacerlas antes de abrir, no después del primer reclamo.
+
 ### Facturación electrónica (DIAN)
 
 **Esto está fuera de lo que hay construido hoy y hay que resolverlo aparte.**
