@@ -9,7 +9,7 @@ Solo necesitás **Docker** y **git**. Nada de Python, Node, MariaDB ni Frappe
 en tu máquina: todo corre en contenedores.
 
 ```bash
-git clone <URL-DEL-REPOSITORIO> antojate
+git clone https://github.com/mateo9216/antojate.git antojate
 cd antojate/deploy
 ./scripts/bootstrap.sh --demo
 ```
@@ -104,7 +104,7 @@ Abrí `pruebas-ui/videos/index.html` para verlos.
 
 ```bash
 # en el servidor, con el dominio ya apuntando a su IP
-git clone <URL-DEL-REPOSITORIO> antojate
+git clone https://github.com/mateo9216/antojate.git antojate
 cd antojate/deploy/produccion
 cp .env.example .env && nano .env
 ./scripts/crear-sitio.sh

@@ -48,7 +48,7 @@ podés.
 ### 2.2 Bajar el proyecto y levantarlo
 
 ```bash
-git clone <URL-DEL-REPOSITORIO> antojate
+git clone https://github.com/mateo9216/antojate.git antojate
 cd antojate/deploy
 ./scripts/bootstrap.sh --demo
 ```
@@ -99,7 +99,7 @@ Abrí la terminal de **Ubuntu** (no PowerShell, no CMD) y trabajá ahí:
 
 ```bash
 cd ~
-git clone <URL-DEL-REPOSITORIO> antojate
+git clone https://github.com/mateo9216/antojate.git antojate
 cd antojate/deploy
 ./scripts/bootstrap.sh --demo
 ```

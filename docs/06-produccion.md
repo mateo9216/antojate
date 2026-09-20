@@ -109,7 +109,7 @@ Let's Encrypt limita los reintentos.
 ## 3. Desplegar
 
 ```bash
-git clone <URL-DEL-REPOSITORIO> antojate
+git clone https://github.com/mateo9216/antojate.git antojate
 cd antojate/deploy/produccion
 
 cp .env.example .env
