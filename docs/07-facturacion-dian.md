@@ -139,11 +139,53 @@ Para esta tienda hay dos que importan:
   en línea necesita notas crédito desde el primer mes.
 
 Los **documentos equivalentes** (entre ellos el tiquete POS) están regulados
-por la **Resolución 000165 de 2023**, y el micrositio aclara que el tiquete POS
+por la **Resolución 000165 de 2023** —que derogó la 000042 de 2020, así que si
+alguien te pasa documentación citando esa última, está desactualizada. Y una
+precisión más: ese articulado fue compilado en la **Resolución Única 000227 del
+23 de septiembre de 2025**, así que hoy lo correcto es citar los artículos
+`1.5.1.x`, no la resolución original—, y el micrositio aclara que el tiquete POS
 «se podrá realizar independientemente del valor de la operación». Aun así,
 están pensados para venta presencial. **Que apliquen o no a una venta por
 internet es justamente una de las preguntas para el contador**, no algo que
 debamos asumir.
+
+### El certificado de firma digital
+
+Una factura electrónica va firmada digitalmente, y ese certificado no lo emite
+cualquiera: tiene que venir de una **Entidad de Certificación Digital
+acreditada por el ONAC**. El directorio público de acreditados está en
+[onac.org.co/directorio-de-acreditados](https://onac.org.co/directorio-de-acreditados/),
+buscando por el esquema ECD. Ahí hay que consultarlo en el momento de decidir:
+la lista cambia, hay entidades que entran, se suspenden o se retiran.
+
+Dos cosas prácticas sobre el costo:
+
+- **Por la ruta gratuita de la DIAN el certificado no cuesta nada.** La propia
+  DIAN lo dice: se solicita sin costo, con vigencia de dos años y trámite
+  completamente virtual. Es el argumento más fuerte de esa ruta.
+- **Por fuera de ahí, no hay precios de lista públicos.** Se revisaron los
+  sitios de varias entidades acreditadas y ninguna publica tarifas: todas
+  remiten a cotización. Circula por blogs una cifra de $120.000-$180.000 al
+  año, pero es estimación de un tercero y además contradice la vigencia de dos
+  años que sí está documentada. **No la uses para costear: pedí cotización.**
+
+Si se va por un proveedor tecnológico, vale preguntarle si el certificado va
+incluido en el plan. Alegra dice que sí; con los demás hay que confirmarlo,
+porque es un costo que aparece después si nadie preguntó antes.
+
+### Tres detalles que se preguntan siempre
+
+- **La resolución de numeración dura máximo dos años** y no puede pedirse por
+  menos. Si el rango se agota, se pide otro. Si va a vencer con rango sin usar,
+  la solicitud se tramita **hasta 15 días hábiles antes** del vencimiento.
+  Conviene ponerlo en el calendario: quedarse sin numeración es quedarse sin
+  poder vender.
+- **El RADIAN no aplica** a esta tienda. Es el registro de facturas como título
+  valor, para quien las negocia. Si el cliente no va a vender sus facturas, no
+  le corresponde.
+- **El tiquete POS electrónico ya es obligatorio para todos**, con un umbral de
+  5 UVT (unos $261.870 con la UVT de 2026, $52.374). No le aplica a una tienda
+  en línea que factura, **pero sí el día que el cliente abra un punto físico**.
 
 ### Sin habilitarse no se factura
 
@@ -184,6 +226,17 @@ emitimos, sino cuando la DIAN la valida. El flujo es:
   Se entrega al comprador: XML + representación gráfica (PDF con QR)
 ```
 
+**Esto condiciona el diseño, no es un detalle.** No hay un plazo de gracia para
+enviar la factura después: la factura **no existe** hasta que la DIAN la valida.
+Las únicas ventanas diferidas son de 48 horas y solo aplican en contingencia.
+
+Consecuencias concretas para la tienda:
+
+- La emisión tiene que ser **síncrona, o con reintentos en segundo plano** y
+  visibilidad del estado. No sirve un "lo mando después".
+- **Al comprador no se le puede entregar nada antes de que la DIAN valide.**
+  El correo de "acá está tu factura" sale después de la validación, no antes.
+
 La documentación técnica oficial que haría falta para construir esto:
 
 | Recurso | Para qué |
@@ -201,61 +254,78 @@ una versión nueva.
 
 ## 5. Las tres rutas
 
-La DIAN misma reconoce tres formas de facturar: su solución gratuita, un
-proveedor tecnológico autorizado, o software propio.
+La DIAN reconoce tres formas de facturar: su solución gratuita, un proveedor
+tecnológico autorizado, o software propio habilitado.
+
+### Antes de comparar: quién queda como responsable
+
+Es la distinción que más pesa y la que casi nadie explica.
+
+- **Proveedor tecnológico (PT) habilitado.** La DIAN mantiene un registro
+  público de proveedores autorizados —97 en la última revisión—. Si se contrata
+  a uno de ellos, el comercio **opera amparado bajo la habilitación del
+  proveedor**.
+- **Software propio.** Si el proveedor **no** está en ese registro, lo que se
+  está usando es la modalidad de software propio: **el cliente se habilita ante
+  la DIAN y es el titular responsable**.
+
+Ninguna de las dos es ilegal. Pero cambian quién responde, y cambian el trámite
+que le toca al cliente. **Preguntale a cualquier proveedor, por escrito, bajo
+qué habilitación transmite**, y contrastalo contra el catálogo oficial de la
+DIAN antes de firmar. Hay proveedores conocidos y con buena API que **no** están
+en ese registro.
 
 ### Ruta A — La solución gratuita de la DIAN
 
-**Qué es.** Software gratuito «para todos los empresarios y responsables que
-deseen cumplir con la obligación de facturar electrónicamente», **sin límite de
-volumen**, e incluye el **certificado de firma digital gratis con vigencia de
-dos años**.
+**Qué es.** Software gratuito de la propia DIAN. Y es mejor de lo que suele
+suponerse:
 
-**El problema.** Es una herramienta web: se entra, se llenan los datos y se
-emite. **La DIAN no documenta ninguna API para integrarse desde otro sistema.**
+- **No tiene topes.** La norma es explícita: puede usarse «sin atender límite
+  de cantidad, montos de los documentos, adquirentes, bienes y/o servicios».
+  Cualquiera que te diga que hay un límite en UVT o en número de facturas,
+  está equivocado.
+- **El certificado de firma digital es gratis** por esta vía, con vigencia de
+  dos años y trámite virtual.
 
-Para esta tienda eso significa que alguien tendría que **copiar a mano** cada
-pedido de ERPNext al portal de la DIAN. Con cinco pedidos al día es tedioso
-pero viable; con cincuenta es imposible y además se van a cometer errores.
+**El problema.** Es una herramienta web, con carga por plantillas. **No tiene
+API.** Alguien tendría que pasar cada pedido a mano.
 
-- **Desarrollo:** ninguno.
-- **Costo:** $0.
-- **Costo real:** el tiempo de una persona, todos los días, para siempre.
-
-Ojo con algo que aplica a **todas** las rutas: aunque se use un proveedor, el
-comercio igual tiene que pasar **su propio set de pruebas** y quedar habilitado
-ante la DIAN. El proveedor no lo exime de eso. Es tiempo del cliente, no
-nuestro, y conviene arrancarlo cuanto antes.
+- **Desarrollo:** ninguno. Con un reporte de pedidos listos para facturar,
+  1-3 días-persona.
+- **Costo:** **$0 al año**, certificado incluido.
+- **Costo real:** el tiempo de una persona, por cada pedido.
 
 ### Ruta B — Un proveedor tecnológico por API
 
-**Qué es.** Hay **97 proveedores tecnológicos autorizados** por la DIAN, con
-catálogo público. Varios ofrecen API REST: nosotros les mandamos los datos de
-la factura en JSON y ellos arman el UBL, lo firman, lo mandan a la DIAN y
-devuelven el CUFE, el XML y el PDF con QR. **Nosotros no tocamos XML.**
+**Qué es.** Le mandamos los datos de la factura en JSON y el proveedor arma el
+UBL, lo firma, lo transmite a la DIAN y devuelve el CUFE, el XML y el PDF.
+**Nosotros no tocamos XML.**
 
-De los que se revisaron, dos tienen documentación pública y accesible:
+Del relevamiento, lo que hay que saber antes de elegir:
 
-| | **Factus** | **Alegra** |
-|---|---|---|
-| Documentación | [developers.factus.com.co](https://developers.factus.com.co/), pública y completa | [developer.alegra.com](https://developer.alegra.com/), pública |
-| Sandbox | Sí, gratuito e ilimitado | Sí, con prueba de 15 días sin tarjeta |
-| Precio | **No publicado.** Hay que cotizar | **Publicado:** desde ~$17.900/mes, facturas ilimitadas |
-| Certificado de firma | A confirmar | **Incluido** en el plan |
-| Cubre | Facturas, notas crédito y débito, documento soporte, RADIAN | Facturación + contabilidad completa |
-| Contra | Precio desconocido hasta cotizar | Las facturas viven también en Alegra: dos fuentes de verdad |
+| | Estado en el registro DIAN | API | Precio |
+|---|---|---|---|
+| **Alegra** | Habilitado | REST, producto *e-provider*, con sandbox | **No publicado** para la API |
+| **The Factory HKA** | Habilitado | REST con Swagger abierto, y SOAP | No publicado |
+| **Cadena** | Habilitado | No documentada públicamente | Publicado, desde ~$30.900/mes |
+| **Factus** | **No aparece** | REST, sandbox gratuito, muy buena documentación | No publicado |
 
-Varios proveedores grandes (Dataico, The Factory HKA, FacturaTech, Carvajal,
-Cadena, Delcop) **no tienen documentación pública accesible**: operan con
-contrato comercial previo. Para un cliente pequeño eso los descarta de entrada.
+Dos advertencias que salieron del contraste y que conviene tener presentes:
 
-**Lo que nos tocaría construir**, con el desglose:
+- **El precio bajo que Alegra publica (~$17.900/mes) es el de su aplicación
+  manual, no el de la API.** El producto para integrar es otro y su precio no
+  está publicado. Es un error fácil de cometer al costear.
+- **Factus no aparece en el registro oficial de proveedores**, lo que sugiere
+  modalidad de software propio. No lo descarta —su API es la más cómoda del
+  lote y su sandbox es abierto—, pero **hay que preguntárselo antes**.
+
+**Lo que nos tocaría construir:**
 
 | Pieza | Días-persona |
 |---|---|
 | Doctype de configuración + autenticación con reintentos | 2 |
 | Armar el payload y mapear los catálogos de la DIAN (tipo de documento, DIVIPOLA, unidades, tributos, formas de pago) | 3-5 |
-| Disparar el envío al confirmar la factura, en segundo plano, con estados y errores | 2-3 |
+| Envío al confirmar la factura, en segundo plano, con estados y errores | 2-3 |
 | Guardar CUFE, XML y PDF; formato de impresión con QR; envío por correo | 2-3 |
 | Notas crédito para anulaciones y devoluciones | 2 |
 | Pruebas en sandbox y acompañar el set de pruebas de habilitación | 2-4 |
@@ -263,18 +333,18 @@ contrato comercial previo. Para un cliente pequeño eso los descarta de entrada.
 | **Más el trabajo previo de la sección 2** | **+4-7** |
 | **Total** | **17-27 días-persona** |
 
-Donde de verdad se va el tiempo no es en hablar con la API: es en **el mapeo de
-los catálogos de la DIAN**, que tiene campos obligatorios condicionales según
-el tipo de operación.
+Donde se va el tiempo real no es en hablar con la API: es en **el mapeo de los
+catálogos de la DIAN**, con campos obligatorios condicionales según el tipo de
+operación.
 
-A favor: el equipo ya tiene el patrón exacto construido. `api/pagos.py` con su
-doctype de configuración, sus llaves cifradas y su manejo de estados es
-justamente esta forma. No es territorio nuevo.
+A favor: el equipo ya tiene el patrón construido. `api/pagos.py`, con su doctype
+de configuración, sus llaves cifradas y su manejo de estados, es exactamente
+esta forma. No es territorio nuevo.
 
-**Una salvaguarda barata:** meter la llamada al proveedor detrás de una
-interfaz mínima —un solo método `emitir(factura)`— para que cambiar de
-proveedor no sea reescribir la integración. Cuesta casi nada ahora y es el
-único seguro contra quedar amarrados a un precio que todavía no conocemos.
+**Una salvaguarda barata:** meter la llamada al proveedor detrás de una interfaz
+mínima —un solo método `emitir(factura)`—. Con varios candidatos vivos y la
+mitad sin precio público, vale más que nunca: cambiar de proveedor no debería
+ser reescribir la integración.
 
 ### Ruta C — Software propio, hablando directo con la DIAN
 
@@ -293,51 +363,48 @@ Construir sobre eso es heredar el mantenimiento de todo.
 
 Como referencia de tamaño: la localización italiana de ERPNext —el caso más
 parecido en el propio código, también XML enviado a un ente estatal— pesa unas
-**1.400 líneas**, y ni siquiera resuelve la firma ni el envío. Sumale el set de
-pruebas de habilitación y el mantenimiento perpetuo cada vez que la DIAN saque
-una versión nueva del anexo técnico.
+**1.400 líneas**, y ni siquiera resuelve la firma ni el envío.
 
 - **Desarrollo estimado:** de 40 a 60 días-persona, más mantenimiento continuo.
-- **Costo recurrente:** solo el certificado de firma.
 - **Cuándo tendría sentido:** con un volumen tan alto que el costo por documento
   del proveedor supere lo que cuesta mantener el desarrollo. No es el caso de
   una tienda que arranca.
 
----
-
 ## 6. Recomendación
 
-**Ruta B: un proveedor tecnológico por API**, en tres pasos y en este orden.
+**Cambié de opinión sobre el orden.** La primera versión de este documento
+recomendaba integrar un proveedor desde el arranque y usar la herramienta
+gratuita apenas como puente incómodo. Al verificar que **la solución gratuita
+de la DIAN no tiene topes de volumen y entrega el certificado de firma gratis**,
+esa herramienta deja de ser un parche y pasa a ser un punto de partida legítimo.
 
 **1. Ahora, sin esperar a nadie: el trabajo previo (4-7 días-persona).**
 IVA por producto, decidir si los precios publicados lo incluyen, capturar el
 documento de identidad en el checkout y generar la factura al confirmarse el
-pago. Esto hay que hacerlo en cualquier escenario y **bloquea todo lo demás**.
-Y la decisión sobre el IVA cambia los precios que se publican, así que cuanto
-antes se tome, mejor.
+pago. Hay que hacerlo en cualquier escenario y **bloquea todo lo demás**. La
+decisión sobre el IVA cambia los precios que se publican: cuanto antes, mejor.
 
-**2. Mientras tanto, un puente (1-3 días-persona).** Mientras el cliente tramita
-su habilitación ante la DIAN, que facture con la herramienta gratuita a partir
-de un reporte de pedidos. Es defendible unas semanas con volumen bajo. No más.
+**2. Arrancar con la solución gratuita de la DIAN (1-3 días-persona).**
+Un reporte de pedidos listos para facturar, y alguien los emite. **Cuesta $0 al
+año, cumple legalmente y no tiene límite de volumen.** Para un cliente que
+arranca vendiendo poco, es la decisión sensata.
 
-**3. El destino: integrar un proveedor (13-20 días-persona).** Cuál depende de
-una sola pregunta al cliente, que ya está en la sección 7:
+**3. Automatizar cuando el volumen lo justifique, no antes.** El disparador es
+operativo, no técnico: **cuando transcribir a mano cueste más que el
+desarrollo.** Con unos pocos pedidos al día no lo justifica; con decenas, sí.
 
-- **Si además necesita contabilidad → Alegra.** Es el único que **publica
-  precios** e incluye el certificado de firma en el plan. Para un negocio que
-  arranca, eso elimina dos incógnitas de costo de un golpe.
-- **Si solo quiere emitir desde la tienda → Factus.** Mejor ergonomía para
-  integrar: sandbox gratuito e ilimitado, documentación completa y cubre notas
-  crédito, documento soporte y RADIAN. **Pero hay que cotizarlo antes de
-  comprometer nada**, porque no publica precios.
+**4. Al automatizar, preferir un proveedor que esté en el registro de la DIAN**,
+para que el cliente opere amparado bajo la habilitación del proveedor en vez de
+ser él el titular responsable. De los habilitados, Alegra y The Factory HKA son
+los mejor documentados. **Ninguno publica el precio de su API: hay que cotizar
+los dos.**
+
+Si el cliente acepta habilitarse como software propio, se abren opciones más
+baratas y con mejor sandbox. Es una decisión suya, no nuestra, y hay que
+planteársela con las consecuencias claras.
 
 **Lo que no haría:** construir el UBL y la firma nosotros, ni esperar que
 aparezca una localización colombiana de ERPNext.
-
-Si el volumen va a ser muy bajo al principio, quedarse un tiempo en el paso 2
-es razonable. Lo que no es razonable es quedarse ahí **sin fecha de salida**:
-funciona hasta que deja de funcionar, y suele dejar de funcionar justo cuando
-al negocio le empieza a ir bien.
 
 ## 7. Qué hay que decidir con el cliente
 
@@ -368,43 +435,52 @@ Preguntas concretas, para hacérselas de una y no en cuentagotas:
 3. Generar el `Sales Invoice` automáticamente en el momento que se acuerde.
 4. Ajustar las pruebas para cubrir todo lo anterior.
 
-**Fase 2 — El puente · 1-3 días-persona**
+**Fase 2 — Salir a facturar sin costo · 1-3 días-persona**
 
-5. Un reporte de pedidos listos para facturar, para que alguien los emita en la
-   herramienta gratuita mientras sale la habilitación.
+5. Un reporte de pedidos listos para facturar, con todo lo que pide la
+   herramienta gratuita de la DIAN.
+6. Acompañar al cliente en la habilitación: los siete pasos y el set de pruebas.
+7. Emitir **una factura real** y verificarla de punta a punta, igual que se hizo
+   con el primer pago real.
 
-**Fase 3 — Integrar el proveedor · 13-20 días-persona**
+Con esto el cliente ya está facturando legalmente, a costo cero.
 
-6. Cotizar Factus y Alegra, y confirmar que estén en el registro oficial.
-7. Configuración y autenticación, detrás de una interfaz `emitir(factura)`.
-8. Mapeo de los catálogos de la DIAN. Es la parte larga.
-9. Envío al confirmar la factura, en segundo plano, con estados y reintentos.
-10. CUFE, XML, PDF con QR y entrega al comprador por correo.
-11. Notas crédito para devoluciones y retracto.
+**Fase 3 — Automatizar, cuando el volumen lo pida · 13-20 días-persona**
 
-**Fase 4 — Habilitación y salida**
+8. Cotizar los proveedores habilitados y confirmar su estado en el registro.
+9. Configuración y autenticación, detrás de una interfaz `emitir(factura)`.
+10. Mapeo de los catálogos de la DIAN. Es la parte larga.
+11. Envío al validar la factura, con estados y reintentos. Nada se le entrega al
+    comprador antes de que la DIAN valide.
+12. CUFE, XML, PDF con QR y entrega por correo.
+13. Notas crédito para devoluciones y retracto.
 
-12. Acompañar al cliente en los siete pasos de habilitación.
-13. Pasar el set de pruebas contra la DIAN.
-14. Emitir **una factura real** y verificarla de punta a punta, igual que se
-    hizo con el primer pago real.
-
-**Total estimado: 18-30 días-persona**, sin contar los tiempos de trámite del
-cliente. La fase 4 depende de él, no de nosotros: conviene arrancarla en
-paralelo con la fase 1, no al final.
+**Total si se hace todo: 18-30 días-persona**, sin contar los trámites del
+cliente. Pero **la fase 3 puede esperar meses**, y esa es justamente la gracia
+de este orden: se sale a vender facturando bien, sin pagar un desarrollo que
+todavía no se necesita.
 
 ## 9. Lo que falta verificar
 
 Para ser honestos sobre los límites de este documento:
 
-- **Que Factus y Alegra estén hoy en el registro oficial de proveedores
-  tecnológicos de la DIAN.** Ninguno de los dos lo declara explícitamente en su
-  web. Es lo primero que hay que confirmar contra el catálogo oficial, **antes
-  de firmar nada**.
-- **Los precios.** Los de Alegra están publicados pero cambian; los de Factus
-  hay que pedirlos. Cotizá los dos antes de decidir.
-- **Si a esta tienda le sirve un documento equivalente** en vez de factura
-  electrónica de venta, y los umbrales que apliquen: pregunta para el contador.
+- **Quién firma cuando se usa un proveedor tecnológico.** Es el punto abierto
+  que más pesa. La norma habla siempre de «la firma digital **del facturador
+  electrónico**» y habilita contratar a un proveedor, pero no dice
+  explícitamente si el proveedor puede firmar con su propio certificado en
+  representación del comercio. El detalle está en la «Política de Firma» de la
+  DIAN, que no se logró ubicar. **Importa para el costeo**: si el cliente
+  necesita su propio certificado aunque use proveedor, es un costo y un trámite
+  más. Preguntáselo al proveedor y que lo responda por escrito.
+- **Bajo qué habilitación transmite cada proveedor.** Contrastalo contra el
+  catálogo oficial de la DIAN el día de la decisión. En la revisión hecha, unos
+  aparecían y otros no, y eso cambia quién es el titular responsable.
+- **Todos los precios.** Los de la API no están publicados en ninguno de los
+  proveedores habilitados. Hay que cotizar, y reconfirmar cualquier cifra el
+  día de la propuesta.
+- **Precios de los certificados digitales** por fuera de la vía gratuita. Las
+  entidades acreditadas no publican tarifas: remiten a cotización. Circulan
+  cifras por blogs que no coinciden con la vigencia oficial; no las uses.
 - **El régimen tributario del cliente**, que determina toda la obligación.
 
 Lo que **sí** quedó verificado y no hace falta volver a mirar: que ERPNext no
