@@ -20,7 +20,7 @@ Esto no es una impresión: es lo que verifiqué en el sistema el 2026-09-19.
 | **Facturas** | **Ninguna.** La palabra `Sales Invoice` no aparece en el código de la app |
 | **IVA** | **No se calcula.** Ningún pedido tiene plantilla de impuestos aplicada |
 | Identificación del comprador | **No se pide.** El checkout no captura cédula ni NIT |
-| Localización colombiana de ERPNext | **No existe.** `regional/` trae Australia, Italia, Sudáfrica, Turquía, Emiratos y EE.UU. |
+| Localización colombiana de ERPNext | **No existe, ni en el core ni en la comunidad** (ver abajo) |
 | Plan de cuentas colombiano | Sí, ERPNext lo trae y es el que usa el sitio |
 
 Comprobé además que **sí funciona** generar una factura desde un pedido
@@ -29,6 +29,24 @@ la reverti sin dejar rastro. Pero esa factura **no tiene un solo campo de
 DIAN**: ni CUFE, ni firma, ni nada.
 
 O sea: la pieza contable existe y funciona. Lo que falta es todo lo electrónico.
+
+### No hay nada hecho para Colombia
+
+Vale la pena detenerse acá, porque la primera reacción de cualquiera es "algo
+debe haber". Se revisó por cuatro vías independientes y no lo hay:
+
+- El core de ERPNext v16 trae localización para Australia, Italia, Sudáfrica,
+  Turquía, Emiratos y Estados Unidos. **Colombia no está.**
+- El marketplace de Frappe Cloud tiene apps de cumplimiento para México,
+  Argentina, Egipto, Arabia Saudita, Malasia, Kenia, India y Emiratos.
+  **Ninguna para Colombia.**
+- Las búsquedas en GitHub devuelven un solo repositorio colombiano para Frappe,
+  y **no sirve**: gestiona documentos normativos, no factura.
+- Tampoco existe un marco genérico de facturación electrónica en el core sobre
+  el cual apoyarse. Cada país se construye entero.
+
+Conclusión práctica: **no hay atajo por ese lado, y no conviene esperar a que
+aparezca.**
 
 ---
 
@@ -54,6 +72,11 @@ exige:
   No todo lleva 19%: hay productos al 5% y exentos, y en un catálogo mixto
   conviven varias tarifas.
 - Configurar la tarifa **por producto**, no global.
+
+**Una trampa concreta:** la plantilla de impuestos para Colombia que trae
+ERPNext (`country_wise_tax.json`) dice **16%**, que es la tarifa que estuvo
+vigente hasta 2016. Hoy la general es 19%. Si alguien la aplica sin mirar,
+factura mal desde el primer día.
 
 **Esta es la decisión de negocio que hay que tomar primero**, porque cambia los
 precios que se publican.
@@ -199,38 +222,82 @@ pero viable; con cincuenta es imposible y además se van a cometer errores.
 - **Costo:** $0.
 - **Costo real:** el tiempo de una persona, todos los días, para siempre.
 
+Ojo con algo que aplica a **todas** las rutas: aunque se use un proveedor, el
+comercio igual tiene que pasar **su propio set de pruebas** y quedar habilitado
+ante la DIAN. El proveedor no lo exime de eso. Es tiempo del cliente, no
+nuestro, y conviene arrancarlo cuanto antes.
+
 ### Ruta B — Un proveedor tecnológico por API
 
 **Qué es.** Hay **97 proveedores tecnológicos autorizados** por la DIAN, con
 catálogo público. Varios ofrecen API REST: nosotros les mandamos los datos de
-la factura y ellos se encargan del UBL, la firma, el envío a la DIAN y el PDF
-con QR.
+la factura en JSON y ellos arman el UBL, lo firman, lo mandan a la DIAN y
+devuelven el CUFE, el XML y el PDF con QR. **Nosotros no tocamos XML.**
 
-**Lo que nos tocaría construir:** tomar el `Sales Invoice` de ERPNext,
-convertirlo al formato del proveedor, manejar la respuesta, guardar el CUFE y
-el estado, adjuntar el XML y el PDF, mandárselos al comprador, y cubrir las
-notas crédito.
+De los que se revisaron, dos tienen documentación pública y accesible:
 
-- **Desarrollo estimado:** de 5 a 10 días-persona. Es una estimación, no una
-  cotización: depende de qué tan buena sea la API del proveedor que se elija.
-- **Costo recurrente:** el plan del proveedor, normalmente por documento o por
-  paquete mensual.
-- **Ventaja de fondo:** cuando la DIAN cambie el anexo técnico, **el problema
-  es del proveedor**, no nuestro.
+| | **Factus** | **Alegra** |
+|---|---|---|
+| Documentación | [developers.factus.com.co](https://developers.factus.com.co/), pública y completa | [developer.alegra.com](https://developer.alegra.com/), pública |
+| Sandbox | Sí, gratuito e ilimitado | Sí, con prueba de 15 días sin tarjeta |
+| Precio | **No publicado.** Hay que cotizar | **Publicado:** desde ~$17.900/mes, facturas ilimitadas |
+| Certificado de firma | A confirmar | **Incluido** en el plan |
+| Cubre | Facturas, notas crédito y débito, documento soporte, RADIAN | Facturación + contabilidad completa |
+| Contra | Precio desconocido hasta cotizar | Las facturas viven también en Alegra: dos fuentes de verdad |
+
+Varios proveedores grandes (Dataico, The Factory HKA, FacturaTech, Carvajal,
+Cadena, Delcop) **no tienen documentación pública accesible**: operan con
+contrato comercial previo. Para un cliente pequeño eso los descarta de entrada.
+
+**Lo que nos tocaría construir**, con el desglose:
+
+| Pieza | Días-persona |
+|---|---|
+| Doctype de configuración + autenticación con reintentos | 2 |
+| Armar el payload y mapear los catálogos de la DIAN (tipo de documento, DIVIPOLA, unidades, tributos, formas de pago) | 3-5 |
+| Disparar el envío al confirmar la factura, en segundo plano, con estados y errores | 2-3 |
+| Guardar CUFE, XML y PDF; formato de impresión con QR; envío por correo | 2-3 |
+| Notas crédito para anulaciones y devoluciones | 2 |
+| Pruebas en sandbox y acompañar el set de pruebas de habilitación | 2-4 |
+| **Integración** | **13-20** |
+| **Más el trabajo previo de la sección 2** | **+4-7** |
+| **Total** | **17-27 días-persona** |
+
+Donde de verdad se va el tiempo no es en hablar con la API: es en **el mapeo de
+los catálogos de la DIAN**, que tiene campos obligatorios condicionales según
+el tipo de operación.
+
+A favor: el equipo ya tiene el patrón exacto construido. `api/pagos.py` con su
+doctype de configuración, sus llaves cifradas y su manejo de estados es
+justamente esta forma. No es territorio nuevo.
+
+**Una salvaguarda barata:** meter la llamada al proveedor detrás de una
+interfaz mínima —un solo método `emitir(factura)`— para que cambiar de
+proveedor no sea reescribir la integración. Cuesta casi nada ahora y es el
+único seguro contra quedar amarrados a un precio que todavía no conocemos.
 
 ### Ruta C — Software propio, hablando directo con la DIAN
 
 **Qué es.** Construir nosotros el UBL 2.1, la firma digital, el consumo de los
 servicios web, el CUFE, la representación gráfica y pasar el set de pruebas.
 
-**Por qué no la recomiendo para este cliente.** Como referencia de tamaño: la
-localización italiana de ERPNext —el caso más parecido que existe en el código,
-también XML enviado a un ente estatal— pesa unas **1.400 líneas**, y ni
-siquiera resuelve la firma ni el envío directo. Sumale el set de pruebas de
-habilitación y el mantenimiento perpetuo cada vez que salga una versión nueva
-del anexo técnico.
+**Es técnicamente posible en este stack.** Se verificó que las librerías
+necesarias funcionan en Python 3.14: `xmlsec` publica ruedas `cp314` y
+`signxml` trae el firmador XAdES que exige la DIAN.
 
-- **Desarrollo estimado:** de 25 a 40 días-persona, más mantenimiento continuo.
+**Pero el ecosistema del que uno se apoyaría es frágil.** La librería histórica
+de Python para esto, `facho`, está **archivada**. Lo más completo que existe
+hoy es un proyecto en TypeScript de un solo autor —lo que obligaría a montar un
+contenedor de Node al lado— y el resto son repositorios sin tracción.
+Construir sobre eso es heredar el mantenimiento de todo.
+
+Como referencia de tamaño: la localización italiana de ERPNext —el caso más
+parecido en el propio código, también XML enviado a un ente estatal— pesa unas
+**1.400 líneas**, y ni siquiera resuelve la firma ni el envío. Sumale el set de
+pruebas de habilitación y el mantenimiento perpetuo cada vez que la DIAN saque
+una versión nueva del anexo técnico.
+
+- **Desarrollo estimado:** de 40 a 60 días-persona, más mantenimiento continuo.
 - **Costo recurrente:** solo el certificado de firma.
 - **Cuándo tendría sentido:** con un volumen tan alto que el costo por documento
   del proveedor supere lo que cuesta mantener el desarrollo. No es el caso de
@@ -240,24 +307,37 @@ del anexo técnico.
 
 ## 6. Recomendación
 
-**Ruta B: un proveedor tecnológico por API.**
+**Ruta B: un proveedor tecnológico por API**, en tres pasos y en este orden.
 
-Es el único punto donde el esfuerzo de desarrollo es razonable *y* la operación
-no depende de que alguien transcriba pedidos a mano *y* el mantenimiento
-normativo no queda de nuestro lado.
+**1. Ahora, sin esperar a nadie: el trabajo previo (4-7 días-persona).**
+IVA por producto, decidir si los precios publicados lo incluyen, capturar el
+documento de identidad en el checkout y generar la factura al confirmarse el
+pago. Esto hay que hacerlo en cualquier escenario y **bloquea todo lo demás**.
+Y la decisión sobre el IVA cambia los precios que se publican, así que cuanto
+antes se tome, mejor.
 
-Con una salvedad honesta: **si el cliente va a vender muy poco al principio
-—menos de unos pocos pedidos por día—, la ruta A es una decisión sensata para
-arrancar.** Facturar a mano mientras el volumen es bajo permite salir a vender
-sin esperar un desarrollo, y la migración a la ruta B después no tira nada a la
-basura, porque el trabajo de la sección 2 (IVA, factura, identificación del
-comprador) hay que hacerlo igual en los dos casos.
+**2. Mientras tanto, un puente (1-3 días-persona).** Mientras el cliente tramita
+su habilitación ante la DIAN, que facture con la herramienta gratuita a partir
+de un reporte de pedidos. Es defendible unas semanas con volumen bajo. No más.
 
-Lo que **no** recomiendo es quedarse en la ruta A sin fecha de salida. Funciona
-hasta que deja de funcionar, y suele dejar de funcionar justo cuando al negocio
-le empieza a ir bien.
+**3. El destino: integrar un proveedor (13-20 días-persona).** Cuál depende de
+una sola pregunta al cliente, que ya está en la sección 7:
 
----
+- **Si además necesita contabilidad → Alegra.** Es el único que **publica
+  precios** e incluye el certificado de firma en el plan. Para un negocio que
+  arranca, eso elimina dos incógnitas de costo de un golpe.
+- **Si solo quiere emitir desde la tienda → Factus.** Mejor ergonomía para
+  integrar: sandbox gratuito e ilimitado, documentación completa y cubre notas
+  crédito, documento soporte y RADIAN. **Pero hay que cotizarlo antes de
+  comprometer nada**, porque no publica precios.
+
+**Lo que no haría:** construir el UBL y la firma nosotros, ni esperar que
+aparezca una localización colombiana de ERPNext.
+
+Si el volumen va a ser muy bajo al principio, quedarse un tiempo en el paso 2
+es razonable. Lo que no es razonable es quedarse ahí **sin fecha de salida**:
+funciona hasta que deja de funcionar, y suele dejar de funcionar justo cuando
+al negocio le empieza a ir bien.
 
 ## 7. Qué hay que decidir con el cliente
 
@@ -280,45 +360,55 @@ Preguntas concretas, para hacérselas de una y no en cuentagotas:
 
 ## 8. Plan de trabajo, si se aprueba
 
-**Fase 1 — Lo que hay que hacer en cualquier caso** (sección 2)
+**Fase 1 — Lo que hay que hacer en cualquier caso · 4-7 días-persona**
 
-1. Definir con el cliente el tratamiento del IVA y aplicarlo por producto.
+1. Definir con el cliente el tratamiento del IVA y aplicarlo por producto
+   (ojo con la plantilla de ERPNext que trae 16%).
 2. Agregar tipo y número de documento al checkout.
 3. Generar el `Sales Invoice` automáticamente en el momento que se acuerde.
 4. Ajustar las pruebas para cubrir todo lo anterior.
 
-**Fase 2 — Escoger e integrar**
+**Fase 2 — El puente · 1-3 días-persona**
 
-5. Escoger proveedor del catálogo de la DIAN, comparando API, sandbox y precio.
-6. Construir la integración: envío, CUFE, estados, reintentos.
-7. Notas crédito para devoluciones y retracto.
-8. Entrega al comprador: XML y PDF con QR por correo.
+5. Un reporte de pedidos listos para facturar, para que alguien los emita en la
+   herramienta gratuita mientras sale la habilitación.
 
-**Fase 3 — Habilitación y salida**
+**Fase 3 — Integrar el proveedor · 13-20 días-persona**
 
-9. Acompañar al cliente en los siete pasos de habilitación.
-10. Pasar el set de pruebas contra la DIAN.
-11. Emitir **una factura real** y verificarla de punta a punta, igual que se
+6. Cotizar Factus y Alegra, y confirmar que estén en el registro oficial.
+7. Configuración y autenticación, detrás de una interfaz `emitir(factura)`.
+8. Mapeo de los catálogos de la DIAN. Es la parte larga.
+9. Envío al confirmar la factura, en segundo plano, con estados y reintentos.
+10. CUFE, XML, PDF con QR y entrega al comprador por correo.
+11. Notas crédito para devoluciones y retracto.
+
+**Fase 4 — Habilitación y salida**
+
+12. Acompañar al cliente en los siete pasos de habilitación.
+13. Pasar el set de pruebas contra la DIAN.
+14. Emitir **una factura real** y verificarla de punta a punta, igual que se
     hizo con el primer pago real.
 
-La fase 3 depende de trámites del cliente, no de nosotros. Conviene arrancarla
-en paralelo con la fase 1, no después.
-
----
+**Total estimado: 18-30 días-persona**, sin contar los tiempos de trámite del
+cliente. La fase 4 depende de él, no de nosotros: conviene arrancarla en
+paralelo con la fase 1, no al final.
 
 ## 9. Lo que falta verificar
 
 Para ser honestos sobre los límites de este documento:
 
-- **Las apps de la comunidad Frappe para Colombia no las pude revisar.** Se
-  acabó el presupuesto de búsquedas web de la sesión. Antes de escribir código
-  hay que mirar si alguien ya resolvió esto y en qué estado está; podría
-  cambiar la estimación de la ruta B. Lo que **sí** verifiqué es que **ERPNext
-  no trae nada de Colombia de fábrica**.
-- **Los precios de los proveedores tecnológicos** hay que cotizarlos. Los 97
-  autorizados están en el catálogo público de la DIAN.
+- **Que Factus y Alegra estén hoy en el registro oficial de proveedores
+  tecnológicos de la DIAN.** Ninguno de los dos lo declara explícitamente en su
+  web. Es lo primero que hay que confirmar contra el catálogo oficial, **antes
+  de firmar nada**.
+- **Los precios.** Los de Alegra están publicados pero cambian; los de Factus
+  hay que pedirlos. Cotizá los dos antes de decidir.
 - **Si a esta tienda le sirve un documento equivalente** en vez de factura
-  electrónica de venta: es pregunta para el contador.
+  electrónica de venta, y los umbrales que apliquen: pregunta para el contador.
+- **El régimen tributario del cliente**, que determina toda la obligación.
+
+Lo que **sí** quedó verificado y no hace falta volver a mirar: que ERPNext no
+trae nada de Colombia, ni en el core ni en la comunidad.
 
 ## 10. Lo que este documento NO es
 
