@@ -40,6 +40,7 @@ antojate/
 │   ├── 04-pruebas-de-interfaz.md       Pruebas en navegador y videos narrados
 │   ├── 05-instalacion-desarrolladores.md   Montarlo en macOS o Windows
 │   ├── 06-produccion.md                Sacarlo a internet y vender de verdad
+│   ├── 07-facturacion-dian.md          Lo que falta para facturar legalmente
 │   └── diagramas/                      Flujo de compra y clases (.drawio)
 ├── pruebas-ui/              Pruebas de navegador con Playwright
 │   ├── tests/               Cuatro recorridos, narrados y grabados
@@ -123,4 +124,6 @@ verde. Para vender de verdad faltan tres cosas que no dependen del código:
 
 1. Que el cliente se afilie a Wompi (checklist en `docs/02-wompi.md`).
 2. Un servidor y un dominio.
-3. Definir cómo se factura ante la DIAN, que hoy está fuera de lo construido.
+3. Definir cómo se factura ante la DIAN. Hoy el sistema **no emite facturas**:
+   el análisis completo, con las rutas y su costo, está en
+   [`docs/07-facturacion-dian.md`](docs/07-facturacion-dian.md).

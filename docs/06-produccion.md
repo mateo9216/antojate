@@ -356,6 +356,12 @@ Es una conversación que hay que tener con el cliente **antes** de abrir la
 tienda, no después de la primera venta. Según el régimen del negocio puede ser
 obligatorio desde la primera factura.
 
+El análisis completo —qué exige la norma, las tres rutas posibles con su costo
+y esfuerzo, y qué hay que construir aunque la DIAN no existiera— está en
+[`07-facturacion-dian.md`](07-facturacion-dian.md). Ojo con un detalle que ahí
+queda documentado: **hoy el sistema no emite ninguna factura y no calcula IVA**,
+así que hay trabajo pendiente incluso antes de hablar de la DIAN.
+
 ---
 
 ## 10. Checklist de salida
