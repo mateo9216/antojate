@@ -205,6 +205,11 @@ proceso tiene siete pasos:
 El paso 4 es el que se subestima siempre: **el software tiene que pasar un set
 de pruebas contra la DIAN antes de poder emitir una sola factura real.**
 
+Dos precisiones sobre ese set, que circulan mal: **no hay límite de intentos**,
+y **la DIAN no publica un número fijo de documentos**. El portal los asigna
+junto con el identificador del set. La cifra de "60 facturas" que aparece en
+blogs y foros está obsoleta; no planifiques con ella.
+
 ---
 
 ## 4. Cómo funciona por dentro
@@ -293,7 +298,20 @@ API.** Alguien tendría que pasar cada pedido a mano.
 - **Desarrollo:** ninguno. Con un reporte de pedidos listos para facturar,
   1-3 días-persona.
 - **Costo:** **$0 al año**, certificado incluido.
-- **Costo real:** el tiempo de una persona, por cada pedido.
+
+**Lo que se pierde, dicho sin adornos** —porque esta es la ruta que recomiendo
+para arrancar, y conviene entrar con los ojos abiertos:
+
+- **El CUFE, el XML y el PDF no vuelven a ERPNext.** La tienda nunca sabe si una
+  venta quedó facturada: hay que confiar en que alguien lo hizo. Se rompe la
+  cadena pedido ↔ pago ↔ factura, que es justamente la que hoy sí está entera.
+- **La numeración queda partida entre dos sistemas**, con el riesgo de saltos o
+  duplicados contra la resolución autorizada.
+- **Las devoluciones y notas crédito viven solo en la otra herramienta.**
+- **El comprador no recibe su factura al pagar**, sino cuando alguien la emita.
+
+Nada de eso impide arrancar así. Pero define el disparador para automatizar:
+**cuando ese desorden empiece a costar más que el desarrollo.**
 
 ### Ruta B — Un proveedor tecnológico por API
 
@@ -472,6 +490,11 @@ Para ser honestos sobre los límites de este documento:
   DIAN, que no se logró ubicar. **Importa para el costeo**: si el cliente
   necesita su propio certificado aunque use proveedor, es un costo y un trámite
   más. Preguntáselo al proveedor y que lo responda por escrito.
+
+  Hay un indicio útil: al menos uno de los proveedores habilitados permite
+  elegir entre firmar con **su** certificado o con el **del comercio**, lo que
+  sugiere que ambos esquemas son admisibles. Es un indicio, no una confirmación:
+  sigue haciendo falta la respuesta por escrito.
 - **Bajo qué habilitación transmite cada proveedor.** Contrastalo contra el
   catálogo oficial de la DIAN el día de la decisión. En la revisión hecha, unos
   aparecían y otros no, y eso cambia quién es el titular responsable.
