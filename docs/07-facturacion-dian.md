@@ -181,12 +181,28 @@ Para esta tienda hay dos que importan:
   distancia con datos del comprador.
 - **Nota crédito electrónica.** Es el mecanismo para anular o devolver, y hay
   que construirla desde el principio, por cuatro motivos:
-  1. **Derecho de retracto** (Ley 1480, art. 47): en ventas a distancia el
-     comprador tiene 5 días hábiles desde la entrega y hay que devolverle
-     **todo** lo pagado, sin descuentos, en máximo 30 días. Hay excepciones
-     —perecederos, bienes de uso personal, productos personalizados— que pueden
-     cubrir buena parte de un catálogo de alimentos, **pero eso se valida
-     producto por producto con el abogado del cliente, no se asume**.
+  1. **Derecho de retracto** (Ley 1480, art. 47, **reformado por la Ley 2439
+     de 2024**): el comprador tiene 5 días hábiles desde la entrega, y hay que
+     devolverle **todo** lo pagado, sin descuentos ni retenciones.
+
+     Tres cosas de esa reforma cambian el diseño, no solo la política:
+
+     - **El plazo para devolver el dinero en comercio electrónico es de 15 días
+       calendario**, no los 30 de la redacción anterior. Ojo con esto: varias
+       fuentes en internet todavía publican el artículo sin la reforma.
+     - **El reloj no arranca con la solicitud.** Arranca cuando se cumplen dos
+       condiciones: que el comprador haya dado los datos completos **y** haya
+       devuelto el producto. Son dos compuertas en el flujo, no una fecha.
+     - **El reembolso va sobre el mismo medio de pago** con el que se pagó,
+       salvo acuerdo distinto. Con Wompi eso significa **usar su mecanismo de
+       reembolso sobre la transacción original**, no hacer una transferencia
+       por fuera. Y hay que informarle al comprador, de forma clara, qué
+       opciones de devolución tiene.
+
+     Hay excepciones al retracto —perecederos, bienes de uso personal, productos
+     personalizados— que pueden cubrir buena parte de un catálogo de alimentos,
+     **pero eso se valida producto por producto con el abogado del cliente, no
+     se asume**.
   2. **Reversión del pago** (Ley 1480, art. 51): aplica directamente porque se
      cobra con PSE y tarjeta.
   3. Devoluciones de mercancía.
@@ -291,7 +307,8 @@ cliente deje de postergarse.
   3 días por no expedir factura estando obligado, o por expedirla sin los
   requisitos. Se puede sustituir pagando una multa del **5% de los ingresos
   operacionales del mes anterior** —y esa multa aplica sin importar que no haya
-  local físico.
+  local físico. La base son los ingresos **del contribuyente**, no solo los del
+  punto sancionado: da igual con un solo canal, importa si mañana hay varios.
 - **Facturar sin los requisitos legales:** 1% del valor de las operaciones,
   con tope de 950 UVT (unos $49,7 millones en 2026).
 
@@ -305,6 +322,12 @@ Lo mismo aplica al revés, y por eso vale nombrarlo: cuando la tienda **le
 compre** a alguien que no está obligado a facturar —un proveedor pequeño, un
 domiciliario independiente— hace falta el **documento soporte en adquisiciones
 a no obligados**, o esa compra no es deducible.
+
+Ese documento es bastante menos exigente que la factura de venta: tiene su
+propio código (el **CUDS**) y se puede emitir en el momento de cada operación
+**o acumular la semana con un mismo proveedor**, transmitiendo a más tardar el
+último día hábil. Solo existe acumulación semanal, no quincenal ni mensual. En
+código: un trabajo semanal, no algo en tiempo real.
 
 ## 4. Cómo funciona por dentro
 
