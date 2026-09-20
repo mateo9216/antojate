@@ -1,0 +1,103 @@
+{% extends "templates/tienda_base.html" %}
+
+{% block tienda %}
+<div class="contenedor" style="max-width:720px">
+
+  {% if estado == "confirmado" %}
+    <div style="text-align:center;padding:48px 0 12px">
+      <div style="font-size:3rem;line-height:1">🎉</div>
+      <h1 style="margin:14px 0 6px">¡Listo, tu pago fue aprobado!</h1>
+      <p style="color:var(--tinta-suave)">
+        Te enviamos la confirmación a {{ pedido.contact_email }}.
+      </p>
+    </div>
+  {% elif estado == "rechazado" %}
+    <div style="text-align:center;padding:48px 0 12px">
+      <h1 style="margin-bottom:6px">El pago no se completó</h1>
+      <p style="color:var(--tinta-suave)">
+        Tu pedido sigue reservado. Podés intentarlo de nuevo con otro medio de pago.
+      </p>
+      <button class="boton" style="margin-top:18px" data-reintentar>Intentar pagar otra vez</button>
+      <div data-error></div>
+    </div>
+  {% else %}
+    <div style="text-align:center;padding:48px 0 12px">
+      <h1 style="margin-bottom:6px">Estamos confirmando tu pago</h1>
+      <p style="color:var(--tinta-suave)">
+        Algunos medios como PSE o Nequi tardan unos minutos. Esta página se
+        actualiza sola; también te avisamos por correo.
+      </p>
+    </div>
+  {% endif %}
+
+  <div class="resumen" style="position:static;margin:26px 0 56px">
+    <h2>Pedido {{ pedido.name }}</h2>
+
+    {% for item in pedido.items %}
+      <div class="resumen-fila">
+        <span>{{ item.qty | int }} × {{ item.item_name }}</span>
+        <span>{{ pesos(item.amount) }}</span>
+      </div>
+    {% endfor %}
+
+    {% for impuesto in pedido.taxes %}
+      <div class="resumen-fila">
+        <span>{{ impuesto.description }}</span>
+        <span>{{ pesos(impuesto.tax_amount) }}</span>
+      </div>
+    {% endfor %}
+
+    <div class="resumen-total">
+      <span>Total</span>
+      <span>{{ pesos(pedido.grand_total) }}</span>
+    </div>
+
+    {% if pago and pago.metodo_pago %}
+      <div class="medios-pago">
+        Pagaste con <span class="medio">{{ pago.metodo_pago }}</span>
+      </div>
+    {% endif %}
+  </div>
+
+  <div style="text-align:center;padding-bottom:48px">
+    <a class="boton secundario" href="/tienda">Seguir comprando</a>
+  </div>
+</div>
+
+<script>
+(function () {
+  var ESTADO = {{ estado | tojson }};
+  var PEDIDO = {{ pedido.name | tojson }};
+  var TOKEN = {{ token | tojson }};
+
+  /* Mientras el pago se confirma, el webhook puede llegar en cualquier momento.
+     Se recarga cada 6 segundos, hasta 20 veces (dos minutos), para no dejar al
+     comprador mirando una pantalla que nunca cambia. */
+  if (ESTADO === "esperando") {
+    var intentos = parseInt(sessionStorage.getItem("antojate:espera") || "0", 10);
+    if (intentos < 20) {
+      sessionStorage.setItem("antojate:espera", intentos + 1);
+      setTimeout(function () { window.location.reload(); }, 6000);
+    }
+  } else {
+    sessionStorage.removeItem("antojate:espera");
+  }
+
+  var $reintentar = document.querySelector("[data-reintentar]");
+  if ($reintentar) {
+    $reintentar.addEventListener("click", function () {
+      $reintentar.disabled = true;
+      $reintentar.textContent = "Preparando el pago...";
+      Antojate.llamar("antojate.api.pagos.reintentar_pago", { pedido: PEDIDO, token: TOKEN })
+        .then(function (r) { window.location.href = r.url; })
+        .catch(function (e) {
+          document.querySelector("[data-error]").innerHTML =
+            '<div class="aviso error" style="margin-top:14px">' + e.message + "</div>";
+          $reintentar.disabled = false;
+          $reintentar.textContent = "Intentar pagar otra vez";
+        });
+    });
+  }
+})();
+</script>
+{% endblock %}

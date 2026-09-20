@@ -1,0 +1,169 @@
+{
+ "actions": [],
+ "creation": "2026-09-19 20:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sec_tienda",
+  "nombre_tienda",
+  "moneda",
+  "column_break_1",
+  "company",
+  "sec_ventas",
+  "warehouse",
+  "price_list",
+  "column_break_2",
+  "customer_group",
+  "territory",
+  "sec_catalogo",
+  "mostrar_sin_stock",
+  "productos_por_pagina",
+  "sec_contacto",
+  "whatsapp",
+  "correo_pedidos",
+  "sec_envio",
+  "cuenta_envio"
+ ],
+ "fields": [
+  {
+   "fieldname": "sec_tienda",
+   "fieldtype": "Section Break",
+   "label": "Tienda"
+  },
+  {
+   "fieldname": "nombre_tienda",
+   "fieldtype": "Data",
+   "label": "Nombre de la tienda",
+   "default": "Antójate"
+  },
+  {
+   "fieldname": "moneda",
+   "fieldtype": "Link",
+   "label": "Moneda",
+   "options": "Currency",
+   "default": "COP",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Compañía",
+   "options": "Company",
+   "reqd": 1,
+   "description": "La compañía de ERPNext contra la que se crean los pedidos."
+  },
+  {
+   "fieldname": "sec_ventas",
+   "fieldtype": "Section Break",
+   "label": "Ventas"
+  },
+  {
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "label": "Bodega de despacho",
+   "options": "Warehouse",
+   "reqd": 1,
+   "description": "De aquí se lee el stock disponible y se descuenta al despachar."
+  },
+  {
+   "fieldname": "price_list",
+   "fieldtype": "Link",
+   "label": "Lista de precios de la tienda",
+   "options": "Price List",
+   "reqd": 1,
+   "description": "Los precios que ve el público salen de esta lista."
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer_group",
+   "fieldtype": "Link",
+   "label": "Grupo de clientes",
+   "options": "Customer Group",
+   "reqd": 1,
+   "description": "Grupo que se asigna a los compradores creados desde la tienda."
+  },
+  {
+   "fieldname": "territory",
+   "fieldtype": "Link",
+   "label": "Territorio",
+   "options": "Territory",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sec_catalogo",
+   "fieldtype": "Section Break",
+   "label": "Catálogo"
+  },
+  {
+   "fieldname": "mostrar_sin_stock",
+   "fieldtype": "Check",
+   "label": "Mostrar productos agotados",
+   "default": "1",
+   "description": "Si está marcado, los agotados se ven pero no se pueden comprar."
+  },
+  {
+   "fieldname": "productos_por_pagina",
+   "fieldtype": "Int",
+   "label": "Productos por página",
+   "default": "24"
+  },
+  {
+   "fieldname": "sec_contacto",
+   "fieldtype": "Section Break",
+   "label": "Contacto"
+  },
+  {
+   "fieldname": "whatsapp",
+   "fieldtype": "Data",
+   "label": "WhatsApp de la tienda",
+   "description": "Se muestra al comprador para dudas. Formato: 573001234567"
+  },
+  {
+   "fieldname": "correo_pedidos",
+   "fieldtype": "Data",
+   "label": "Correo que recibe los pedidos",
+   "options": "Email"
+  },
+  {
+   "fieldname": "sec_envio",
+   "fieldtype": "Section Break",
+   "label": "Envíos"
+  },
+  {
+   "fieldname": "cuenta_envio",
+   "fieldtype": "Link",
+   "label": "Cuenta contable del flete",
+   "options": "Account",
+   "description": "Donde se registra lo cobrado por envío. Suele ser una cuenta de ingresos por fletes."
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-09-19 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Antojate",
+ "name": "Antojate Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

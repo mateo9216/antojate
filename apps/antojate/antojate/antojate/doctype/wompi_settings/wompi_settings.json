@@ -1,0 +1,165 @@
+{
+ "actions": [],
+ "creation": "2026-09-19 20:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "modo",
+  "sec_sandbox",
+  "html_sandbox",
+  "sandbox_public_key",
+  "sandbox_integrity_key",
+  "col_sandbox",
+  "sandbox_private_key",
+  "sandbox_events_key",
+  "sec_produccion",
+  "html_produccion",
+  "prod_public_key",
+  "prod_integrity_key",
+  "col_prod",
+  "prod_private_key",
+  "prod_events_key",
+  "sec_contabilidad",
+  "mode_of_payment",
+  "col_contabilidad",
+  "paid_to"
+ ],
+ "fields": [
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Cobros en línea activos",
+   "default": "1"
+  },
+  {
+   "fieldname": "modo",
+   "fieldtype": "Select",
+   "label": "Ambiente",
+   "options": "Sandbox\nProducción",
+   "default": "Sandbox",
+   "reqd": 1,
+   "description": "En Sandbox no se mueve dinero real. Cambiar a Producción solo cuando el cliente ya esté afiliado y las llaves prod_ estén cargadas."
+  },
+  {
+   "fieldname": "sec_sandbox",
+   "fieldtype": "Section Break",
+   "label": "Llaves de pruebas"
+  },
+  {
+   "fieldname": "html_sandbox",
+   "fieldtype": "HTML",
+   "options": "<p class='text-muted'>Se obtienen gratis y al instante registrándose en <a href='https://comercios.wompi.co' target='_blank'>comercios.wompi.co</a> y entrando al ambiente de pruebas.</p>"
+  },
+  {
+   "fieldname": "sandbox_public_key",
+   "fieldtype": "Data",
+   "label": "Llave pública",
+   "description": "Empieza por pub_test_"
+  },
+  {
+   "fieldname": "sandbox_integrity_key",
+   "fieldtype": "Password",
+   "label": "Secreto de integridad",
+   "description": "Empieza por test_integrity_. Firma el monto del checkout para que nadie lo altere."
+  },
+  {
+   "fieldname": "col_sandbox",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sandbox_private_key",
+   "fieldtype": "Password",
+   "label": "Llave privada",
+   "description": "Empieza por prv_test_"
+  },
+  {
+   "fieldname": "sandbox_events_key",
+   "fieldtype": "Password",
+   "label": "Secreto de eventos",
+   "description": "Empieza por test_events_. Valida que el webhook venga de verdad de Wompi."
+  },
+  {
+   "fieldname": "sec_produccion",
+   "fieldtype": "Section Break",
+   "label": "Llaves de producción"
+  },
+  {
+   "fieldname": "html_produccion",
+   "fieldtype": "HTML",
+   "options": "<p class='text-muted'>Solo disponibles cuando Wompi apruebe la afiliación del comercio.</p>"
+  },
+  {
+   "fieldname": "prod_public_key",
+   "fieldtype": "Data",
+   "label": "Llave pública",
+   "description": "Empieza por pub_prod_"
+  },
+  {
+   "fieldname": "prod_integrity_key",
+   "fieldtype": "Password",
+   "label": "Secreto de integridad",
+   "description": "Empieza por prod_integrity_"
+  },
+  {
+   "fieldname": "col_prod",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "prod_private_key",
+   "fieldtype": "Password",
+   "label": "Llave privada",
+   "description": "Empieza por prv_prod_"
+  },
+  {
+   "fieldname": "prod_events_key",
+   "fieldtype": "Password",
+   "label": "Secreto de eventos",
+   "description": "Empieza por prod_events_"
+  },
+  {
+   "fieldname": "sec_contabilidad",
+   "fieldtype": "Section Break",
+   "label": "Contabilidad"
+  },
+  {
+   "fieldname": "mode_of_payment",
+   "fieldtype": "Link",
+   "label": "Modo de pago",
+   "options": "Mode of Payment",
+   "description": "Con el que se registra el ingreso. Cree uno llamado 'Wompi' si no existe."
+  },
+  {
+   "fieldname": "col_contabilidad",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "paid_to",
+   "fieldtype": "Link",
+   "label": "Cuenta donde entra el dinero",
+   "options": "Account",
+   "description": "Wompi dispersa al siguiente día hábil, así que suele ser una cuenta puente, no la cuenta bancaria final."
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-09-19 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Antojate",
+ "name": "Wompi Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

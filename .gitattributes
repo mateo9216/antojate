@@ -1,0 +1,26 @@
+# Finales de línea LF en todas partes.
+#
+# No es cosmética: los scripts de `deploy/scripts` y `pruebas-ui` se ejecutan
+# dentro de contenedores Linux. Si Git los convierte a CRLF al clonar en
+# Windows, el shell falla con un error tan poco útil como
+# "bad interpreter: /usr/bin/env bash^M". Esto lo evita de raíz.
+* text=auto eol=lf
+
+*.sh      text eol=lf
+*.py      text eol=lf
+*.js      text eol=lf
+*.mjs     text eol=lf
+*.cjs     text eol=lf
+*.json    text eol=lf
+*.html    text eol=lf
+*.css     text eol=lf
+*.md      text eol=lf
+*.yaml    text eol=lf
+*.yml     text eol=lf
+
+*.webm binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.zip  binary
+*.gz   binary

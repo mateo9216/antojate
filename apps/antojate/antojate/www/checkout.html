@@ -1,0 +1,196 @@
+{% extends "templates/tienda_base.html" %}
+
+{% block tienda %}
+<div class="contenedor">
+  <h1 class="titulo-seccion">Finalizar compra</h1>
+
+  <div data-vacio class="vacio" hidden>
+    <h2>No hay nada para pagar</h2>
+    <a class="boton" href="/tienda" style="margin-top:16px">Ver productos</a>
+  </div>
+
+  <form class="dos-columnas" data-form hidden>
+    <div>
+      <div data-avisos></div>
+
+      <div class="campo">
+        <label for="nombre">Nombre completo</label>
+        <input id="nombre" name="nombre" required autocomplete="name">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="campo">
+          <label for="email">Correo electrónico</label>
+          <input id="email" name="email" type="email" required autocomplete="email">
+          <div class="ayuda">Ahí te llega la confirmación del pedido.</div>
+        </div>
+        <div class="campo">
+          <label for="telefono">Celular</label>
+          <input id="telefono" name="telefono" required autocomplete="tel"
+                 inputmode="numeric" placeholder="3001234567">
+        </div>
+      </div>
+
+      <div class="campo">
+        <label for="ciudad">Ciudad</label>
+        <select id="ciudad" name="ciudad" required>
+          <option value="">Escogé tu ciudad</option>
+          {% for c in ciudades %}
+            <option value="{{ c.ciudad }}">{{ c.ciudad }}{% if c.departamento %}, {{ c.departamento }}{% endif %}</option>
+          {% endfor %}
+        </select>
+        {% if not ciudades %}
+          <div class="ayuda" style="color:var(--alerta)">
+            Todavía no hay ciudades de envío configuradas.
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="campo">
+        <label for="direccion">Dirección</label>
+        <input id="direccion" name="direccion" required autocomplete="street-address"
+               placeholder="Calle 10 # 43 - 25">
+      </div>
+
+      <div class="campo">
+        <label for="detalle_direccion">Apartamento, torre, indicaciones (opcional)</label>
+        <input id="detalle_direccion" name="detalle_direccion" autocomplete="address-line2">
+      </div>
+    </div>
+
+    <aside class="resumen">
+      <h2>Tu pedido</h2>
+      <div data-lineas style="font-size:.9rem"></div>
+
+      <div class="resumen-fila">
+        <span>Productos</span>
+        <strong data-subtotal>—</strong>
+      </div>
+      <div class="resumen-fila">
+        <span>Envío</span>
+        <strong data-envio>Escogé la ciudad</strong>
+      </div>
+      <div data-envio-nota></div>
+      <div class="resumen-total">
+        <span>Total</span>
+        <span data-total>—</span>
+      </div>
+
+      <button type="submit" class="boton ancho" style="margin-top:18px" data-pagar>
+        Ir a pagar
+      </button>
+
+      <div class="medios-pago">
+        <span class="medio">Nequi</span>
+        <span class="medio">Bancolombia</span>
+        <span class="medio">PSE</span>
+        <span class="medio">Tarjeta</span>
+      </div>
+      <div class="ayuda" style="margin-top:10px">
+        El pago lo procesa Wompi. Tu pedido se confirma cuando el pago sea aprobado.
+      </div>
+    </aside>
+  </form>
+</div>
+
+<script>
+(function () {
+  var $form = document.querySelector("[data-form]");
+  var $vacio = document.querySelector("[data-vacio]");
+  var $avisos = document.querySelector("[data-avisos]");
+  var $ciudad = document.getElementById("ciudad");
+  var $pagar = document.querySelector("[data-pagar]");
+
+  if (!Antojate.Carrito.leer().length) {
+    $vacio.hidden = false;
+    return;
+  }
+  $form.hidden = false;
+
+  function recalcular() {
+    var items = Antojate.Carrito.leer();
+    if (!items.length) { $form.hidden = true; $vacio.hidden = false; return; }
+
+    Antojate.llamar("antojate.api.carrito.cotizar", { items: items, ciudad: $ciudad.value })
+      .then(function (r) {
+        Antojate.Carrito.guardar(r.lineas.map(function (l) {
+          return { item_code: l.item_code, qty: l.qty };
+        }));
+
+        $avisos.innerHTML = r.errores.map(function (e) {
+          return '<div class="aviso error">' + e + "</div>";
+        }).join("");
+
+        document.querySelector("[data-lineas]").innerHTML = r.lineas.map(function (l) {
+          return '<div style="display:flex;justify-content:space-between;gap:10px;' +
+                 'padding:5px 0;color:var(--tinta-suave)">' +
+                 "<span>" + l.qty + " × " + l.item_name + "</span>" +
+                 "<span>" + Antojate.pesos(l.subtotal) + "</span></div>";
+        }).join("");
+
+        document.querySelector("[data-subtotal]").textContent = Antojate.pesos(r.subtotal);
+        document.querySelector("[data-total]").textContent = Antojate.pesos(r.total);
+
+        var $envio = document.querySelector("[data-envio]");
+        var $nota = document.querySelector("[data-envio-nota]");
+        var info = r.envio_info;
+
+        if (info.estado === "sin_ciudad") {
+          $envio.textContent = "Escogé la ciudad";
+          $nota.innerHTML = "";
+        } else if (info.estado === "no_cubierta") {
+          $envio.textContent = "—";
+          $nota.innerHTML = '<div class="aviso error" style="margin-top:10px">' +
+                            "Todavía no enviamos a " + info.ciudad + ".</div>";
+        } else if (info.gratis) {
+          $envio.textContent = "Gratis";
+          $nota.innerHTML = '<div class="aviso ok" style="margin-top:10px">' +
+                            "¡Tu pedido tiene envío gratis! Llega en " + info.dias +
+                            " días hábiles.</div>";
+        } else {
+          $envio.textContent = Antojate.pesos(r.envio);
+          var falta = info.falta_para_gratis
+            ? " Agregá " + Antojate.pesos(info.falta_para_gratis) + " más y el envío es gratis."
+            : "";
+          $nota.innerHTML = '<div class="aviso info" style="margin-top:10px">' +
+                            "Llega en " + info.dias + " días hábiles." + falta + "</div>";
+        }
+      })
+      .catch(function (e) {
+        $avisos.innerHTML = '<div class="aviso error">' + e.message + "</div>";
+      });
+  }
+
+  $ciudad.addEventListener("change", recalcular);
+  recalcular();
+
+  $form.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    $pagar.disabled = true;
+    $pagar.textContent = "Creando tu pedido...";
+    $avisos.innerHTML = "";
+
+    var datos = {};
+    ["nombre", "email", "telefono", "ciudad", "direccion", "detalle_direccion"]
+      .forEach(function (campo) { datos[campo] = (document.getElementById(campo).value || "").trim(); });
+
+    Antojate.llamar("antojate.api.carrito.crear_pedido", {
+      items: Antojate.Carrito.leer(),
+      comprador: datos
+    })
+      .then(function (r) {
+        /* El carrito se limpia solo cuando el pedido ya existe en el servidor.
+           Si el pago falla, el comprador vuelve a intentarlo desde su pedido. */
+        Antojate.Carrito.limpiar();
+        window.location.href = r.url_pago;
+      })
+      .catch(function (e) {
+        $avisos.innerHTML = '<div class="aviso error">' + e.message + "</div>";
+        $pagar.disabled = false;
+        $pagar.textContent = "Ir a pagar";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+  });
+})();
+</script>
+{% endblock %}

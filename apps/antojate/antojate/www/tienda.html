@@ -1,0 +1,68 @@
+{% extends "templates/tienda_base.html" %}
+
+{% block tienda %}
+<div class="contenedor">
+
+  <nav class="categorias" aria-label="Categorías">
+    <a class="categoria {% if not grupo_activo %}activa{% endif %}" href="/tienda">Todo</a>
+    {% for c in categorias %}
+      <a class="categoria {% if grupo_activo == c.name %}activa{% endif %}"
+         href="/tienda?item_group={{ c.name | urlencode }}">{{ c.nombre }}</a>
+    {% endfor %}
+  </nav>
+
+  <h1 class="titulo-seccion">
+    {% if busqueda %}
+      Resultados para "{{ busqueda }}"
+    {% elif grupo_activo %}
+      {{ grupo_activo }}
+    {% else %}
+      Nuestros productos
+    {% endif %}
+  </h1>
+
+  {% if not productos %}
+    <div class="vacio">
+      <h2>No encontramos nada por aquí</h2>
+      {% if busqueda %}
+        <p>Probá con otra palabra, o <a href="/tienda">mirá todo el catálogo</a>.</p>
+      {% else %}
+        <p>Todavía no hay productos publicados en esta categoría.</p>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="rejilla">
+      {% for p in productos %}
+        <a class="tarjeta" href="{{ p.ruta }}">
+          <div class="tarjeta-imagen">
+            <img src="{{ p.imagen }}" alt="{{ p.item_name }}" loading="lazy">
+          </div>
+          <div class="tarjeta-cuerpo">
+            <div class="tarjeta-nombre">{{ p.item_name }}</div>
+            {% if not p.disponible %}
+              <span class="agotado">Agotado</span>
+            {% endif %}
+            <div class="tarjeta-precio">
+              {% if p.desde %}<span class="tarjeta-desde">desde </span>{% endif %}
+              {{ pesos(p.precio) }}
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+
+    {% if hay_mas or pagina > 1 %}
+      <div style="display:flex;gap:10px;justify-content:center;padding-bottom:48px">
+        {% set base = "/tienda?" ~ ("item_group=" ~ grupo_activo ~ "&" if grupo_activo else "") ~ ("q=" ~ busqueda ~ "&" if busqueda else "") %}
+        {% if pagina > 1 %}
+          <a class="boton secundario" href="{{ base }}pagina={{ pagina - 1 }}">Anterior</a>
+        {% endif %}
+        {% if hay_mas %}
+          <a class="boton secundario" href="{{ base }}pagina={{ pagina + 1 }}">Siguiente</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  {% endif %}
+
+</div>
+{% endblock %}

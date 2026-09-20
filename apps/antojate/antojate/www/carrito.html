@@ -1,0 +1,139 @@
+{% extends "templates/tienda_base.html" %}
+
+{% block tienda %}
+<div class="contenedor">
+  <h1 class="titulo-seccion">Tu carrito</h1>
+
+  <div data-cargando class="vacio">Calculando...</div>
+
+  <div data-vacio class="vacio" hidden>
+    <h2>Tu carrito está vacío</h2>
+    <p>Todavía no agregaste nada.</p>
+    <a class="boton" href="/tienda" style="margin-top:16px">Ver productos</a>
+  </div>
+
+  <div class="dos-columnas" data-contenido hidden>
+    <div>
+      <div data-avisos></div>
+      <div data-lineas></div>
+    </div>
+
+    <aside class="resumen">
+      <h2>Resumen</h2>
+      <div class="resumen-fila">
+        <span>Productos</span>
+        <strong data-subtotal>—</strong>
+      </div>
+      <div class="resumen-fila" style="color:var(--tinta-suave)">
+        <span>Envío</span>
+        <span>Se calcula en el siguiente paso</span>
+      </div>
+      <div class="resumen-total">
+        <span>Total</span>
+        <span data-total>—</span>
+      </div>
+      <a class="boton ancho" href="/checkout" style="margin-top:18px">Continuar</a>
+      <a class="boton secundario ancho" href="/tienda" style="margin-top:10px">Seguir comprando</a>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  var $cargando = document.querySelector("[data-cargando]");
+  var $vacio = document.querySelector("[data-vacio]");
+  var $contenido = document.querySelector("[data-contenido]");
+  var $lineas = document.querySelector("[data-lineas]");
+  var $avisos = document.querySelector("[data-avisos]");
+
+  function pintar() {
+    var items = Antojate.Carrito.leer();
+
+    if (!items.length) {
+      $cargando.hidden = true;
+      $contenido.hidden = true;
+      $vacio.hidden = false;
+      return;
+    }
+
+    Antojate.llamar("antojate.api.carrito.cotizar", { items: items })
+      .then(function (r) {
+        $cargando.hidden = true;
+
+        /* El servidor pudo haber quitado o recortado líneas (agotados, precios
+           retirados). Se sincroniza el carrito local con lo que respondió. */
+        Antojate.Carrito.guardar(r.lineas.map(function (l) {
+          return { item_code: l.item_code, qty: l.qty };
+        }));
+
+        $avisos.innerHTML = r.errores.map(function (e) {
+          return '<div class="aviso error">' + e + "</div>";
+        }).join("");
+
+        if (!r.lineas.length) {
+          $contenido.hidden = true;
+          $vacio.hidden = false;
+          return;
+        }
+
+        $contenido.hidden = false;
+        $vacio.hidden = true;
+
+        $lineas.innerHTML = r.lineas.map(function (l) {
+          return '' +
+            '<div class="linea">' +
+              '<img class="linea-imagen" src="' + l.imagen + '" alt="">' +
+              '<div>' +
+                '<div class="linea-nombre">' + l.item_name + "</div>" +
+                '<div class="linea-precio">' + Antojate.pesos(l.precio) + " c/u</div>" +
+                '<button type="button" data-quitar="' + l.item_code + '" ' +
+                  'style="margin-top:6px;background:none;border:none;padding:0;' +
+                  'color:var(--alerta);cursor:pointer;font-size:.85rem;font-family:inherit">Quitar</button>' +
+              "</div>" +
+              '<div style="text-align:right">' +
+                '<div class="cantidad" style="margin-bottom:6px">' +
+                  '<button type="button" data-menos="' + l.item_code + '">−</button>' +
+                  "<span>" + l.qty + "</span>" +
+                  '<button type="button" data-mas="' + l.item_code + '" ' +
+                    (l.qty >= l.stock ? "disabled" : "") + ">+</button>" +
+                "</div>" +
+                "<strong>" + Antojate.pesos(l.subtotal) + "</strong>" +
+              "</div>" +
+            "</div>";
+        }).join("");
+
+        document.querySelector("[data-subtotal]").textContent = Antojate.pesos(r.subtotal);
+        document.querySelector("[data-total]").textContent = Antojate.pesos(r.subtotal);
+        conectar();
+      })
+      .catch(function (e) {
+        $cargando.innerHTML = '<div class="aviso error">' + e.message + "</div>";
+      });
+  }
+
+  function conectar() {
+    $lineas.querySelectorAll("[data-quitar]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        Antojate.Carrito.quitar(b.dataset.quitar); pintar();
+      });
+    });
+    $lineas.querySelectorAll("[data-mas]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var code = b.dataset.mas;
+        var actual = Antojate.Carrito.leer().filter(function (i) { return i.item_code === code; })[0];
+        Antojate.Carrito.cambiar(code, (actual ? actual.qty : 0) + 1); pintar();
+      });
+    });
+    $lineas.querySelectorAll("[data-menos]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var code = b.dataset.menos;
+        var actual = Antojate.Carrito.leer().filter(function (i) { return i.item_code === code; })[0];
+        Antojate.Carrito.cambiar(code, (actual ? actual.qty : 1) - 1); pintar();
+      });
+    });
+  }
+
+  pintar();
+})();
+</script>
+{% endblock %}

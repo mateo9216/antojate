@@ -1,0 +1,58 @@
+{% extends "templates/base.html" %}
+
+{#
+  Base del storefront. Extiende la plantilla mínima de Frappe (no web.html)
+  para no heredar la barra de navegación del portal, que no encaja con una
+  tienda. Las páginas de /www heredan de aquí y solo llenan `tienda`.
+#}
+
+{% block title %}{{ title or tienda.nombre_tienda or "Antójate" }}{% endblock %}
+
+{#
+  El JS va en el <head> a propósito. Frappe inyecta `web_include_js` al final
+  del <body>, es decir DESPUÉS de los scripts propios de cada página, y esas
+  páginas usan `Antojate.*` en cuanto se leen. Cargado abajo, `Antojate` todavía
+  no existe cuando lo llaman.
+#}
+{% block head_include %}
+{{ super() }}
+<script src="/assets/antojate/js/tienda.js"></script>
+{% endblock %}
+
+{% block navbar %}
+<header class="cabecera">
+  <div class="contenedor cabecera-fila">
+    <a class="logo" href="/tienda">{{ tienda.nombre_tienda or "Antójate" }}</a>
+
+    <form class="buscador" action="/tienda" method="get" role="search">
+      <input type="search" name="q" value="{{ frappe.form_dict.q or '' }}"
+             placeholder="Buscar productos..." aria-label="Buscar productos">
+    </form>
+
+    <div class="acciones">
+      <a class="carrito-boton" href="/carrito">
+        Carrito
+        <span class="carrito-contador" data-carrito-contador style="display:none">0</span>
+      </a>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<main>
+  {% block tienda %}{% endblock %}
+</main>
+
+<footer class="pie">
+  <div class="contenedor">
+    <div>{{ tienda.nombre_tienda or "Antójate" }} — pagos con Nequi, Bancolombia, PSE y tarjeta.</div>
+    {% if tienda.whatsapp %}
+      <div style="margin-top:6px">
+        ¿Dudas? Escribinos al
+        <a href="https://wa.me/{{ tienda.whatsapp }}" target="_blank" rel="noopener">WhatsApp</a>.
+      </div>
+    {% endif %}
+  </div>
+</footer>
+{% endblock %}

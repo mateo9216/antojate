@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+
+# Configuración local con contraseñas: nunca al repositorio.
+deploy/.env
+deploy/produccion/.env
+
+# Copias de seguridad
+*.sql.gz
+*.tar
+respaldos/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/

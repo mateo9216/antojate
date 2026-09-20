@@ -1,0 +1,146 @@
+{
+ "actions": [],
+ "autoname": "field:referencia",
+ "creation": "2026-09-19 20:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "referencia",
+  "sales_order",
+  "estado",
+  "column_break_1",
+  "transaction_id",
+  "metodo_pago",
+  "procesado",
+  "sec_montos",
+  "monto",
+  "moneda",
+  "column_break_2",
+  "email_comprador",
+  "sec_evento",
+  "payload"
+ ],
+ "fields": [
+  {
+   "fieldname": "referencia",
+   "fieldtype": "Data",
+   "label": "Referencia",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "description": "La que viaja a Wompi y vuelve en el evento. Única por intento de pago."
+  },
+  {
+   "fieldname": "sales_order",
+   "fieldtype": "Link",
+   "label": "Pedido",
+   "options": "Sales Order",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "label": "Estado",
+   "options": "PENDING\nAPPROVED\nDECLINED\nVOIDED\nERROR",
+   "default": "PENDING",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "transaction_id",
+   "fieldtype": "Data",
+   "label": "ID de transacción en Wompi",
+   "read_only": 1
+  },
+  {
+   "fieldname": "metodo_pago",
+   "fieldtype": "Data",
+   "label": "Medio de pago",
+   "read_only": 1,
+   "in_list_view": 1,
+   "description": "NEQUI, PSE, BANCOLOMBIA_TRANSFER, CARD..."
+  },
+  {
+   "fieldname": "procesado",
+   "fieldtype": "Check",
+   "label": "Ya aplicado al pedido",
+   "read_only": 1,
+   "description": "Evita que un reintento del webhook cobre o descuente stock dos veces."
+  },
+  {
+   "fieldname": "sec_montos",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "monto",
+   "fieldtype": "Currency",
+   "label": "Monto",
+   "options": "moneda",
+   "reqd": 1
+  },
+  {
+   "fieldname": "moneda",
+   "fieldtype": "Link",
+   "label": "Moneda",
+   "options": "Currency",
+   "default": "COP"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "email_comprador",
+   "fieldtype": "Data",
+   "label": "Correo del comprador",
+   "options": "Email"
+  },
+  {
+   "fieldname": "sec_evento",
+   "fieldtype": "Section Break",
+   "label": "Último evento recibido"
+  },
+  {
+   "fieldname": "payload",
+   "fieldtype": "Code",
+   "label": "Payload",
+   "options": "JSON",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-19 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Antojate",
+ "name": "Wompi Transaction",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,173 @@
+{% extends "templates/tienda_base.html" %}
+
+{% block tienda %}
+<div class="contenedor">
+  <div class="producto">
+
+    <div class="producto-imagen">
+      <img src="{{ producto.imagen }}" alt="{{ producto.item_name }}">
+    </div>
+
+    <div>
+      <div style="font-size:.85rem;color:var(--tinta-suave);margin-bottom:8px">
+        <a href="/tienda?item_group={{ producto.item_group | urlencode }}"
+           style="color:inherit">{{ producto.item_group }}</a>
+      </div>
+
+      <h1>{{ producto.item_name }}</h1>
+
+      <div class="producto-precio" data-precio>
+        {{ pesos(producto.precio) }}
+      </div>
+
+      {% if producto.descripcion %}
+        <div class="producto-descripcion">{{ producto.descripcion }}</div>
+      {% endif %}
+
+      {% if producto.has_variants %}
+        {% for atributo in producto.atributos %}
+          <div class="atributo" data-atributo="{{ atributo.nombre }}">
+            <div class="atributo-nombre">{{ atributo.nombre }}</div>
+            <div class="opciones">
+              {% for valor in atributo.valores %}
+                <button type="button" class="opcion"
+                        data-valor="{{ valor }}" aria-pressed="false">{{ valor }}</button>
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+        <div class="aviso info" data-mensaje-variante>Escogé una presentación para continuar.</div>
+      {% endif %}
+
+      <div style="display:flex;gap:12px;align-items:center;margin-top:22px">
+        <div class="cantidad">
+          <button type="button" data-menos aria-label="Quitar una unidad">−</button>
+          <span data-cantidad>1</span>
+          <button type="button" data-mas aria-label="Agregar una unidad">+</button>
+        </div>
+        <button class="boton" data-agregar
+                {% if producto.has_variants or not producto.disponible %}disabled{% endif %}>
+          {% if not producto.disponible %}Agotado{% else %}Agregar al carrito{% endif %}
+        </button>
+      </div>
+
+      <div class="medios-pago">
+        Pagá con
+        <span class="medio">Nequi</span>
+        <span class="medio">Bancolombia</span>
+        <span class="medio">PSE</span>
+        <span class="medio">Tarjeta</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  var VARIANTES = {{ variantes_json }};
+  var TIENE_VARIANTES = {{ "true" if producto.has_variants else "false" }};
+  var CODIGO_SIMPLE = {{ producto.item_code | tojson }};
+  var DISPONIBLE_SIMPLE = {{ "true" if producto.disponible else "false" }};
+
+  var seleccion = {};
+  var elegida = null;
+  var cantidad = 1;
+
+  var $precio = document.querySelector("[data-precio]");
+  var $agregar = document.querySelector("[data-agregar]");
+  var $mensaje = document.querySelector("[data-mensaje-variante]");
+  var $cantidad = document.querySelector("[data-cantidad]");
+
+  function pintarCantidad() { $cantidad.textContent = cantidad; }
+
+  document.querySelector("[data-mas]").addEventListener("click", function () {
+    var tope = elegida ? elegida.stock : 99;
+    if (cantidad < tope) { cantidad++; pintarCantidad(); }
+  });
+  document.querySelector("[data-menos]").addEventListener("click", function () {
+    if (cantidad > 1) { cantidad--; pintarCantidad(); }
+  });
+
+  /* Una variante encaja si todos los atributos escogidos coinciden. */
+  function buscarVariante() {
+    var nombres = Object.keys(seleccion);
+    return VARIANTES.filter(function (v) {
+      return nombres.every(function (n) { return v.atributos[n] === seleccion[n]; });
+    });
+  }
+
+  function refrescar() {
+    var candidatas = buscarVariante();
+    var totalAtributos = document.querySelectorAll("[data-atributo]").length;
+    var completa = Object.keys(seleccion).length === totalAtributos;
+
+    elegida = (completa && candidatas.length === 1) ? candidatas[0] : null;
+
+    if (elegida) {
+      $precio.textContent = Antojate.pesos(elegida.precio);
+      if (elegida.disponible) {
+        $mensaje.className = "aviso ok";
+        $mensaje.textContent = "Disponible: " + elegida.stock + " unidades.";
+        $agregar.disabled = false;
+        $agregar.textContent = "Agregar al carrito";
+      } else {
+        $mensaje.className = "aviso error";
+        $mensaje.textContent = "Esta presentación está agotada.";
+        $agregar.disabled = true;
+        $agregar.textContent = "Agotado";
+      }
+      if (cantidad > elegida.stock) { cantidad = Math.max(1, elegida.stock); pintarCantidad(); }
+    } else {
+      $mensaje.className = "aviso info";
+      $mensaje.textContent = "Escogé una presentación para continuar.";
+      $agregar.disabled = true;
+      $agregar.textContent = "Agregar al carrito";
+    }
+
+    /* Apaga las opciones que, con lo ya escogido, no llevan a ninguna variante. */
+    document.querySelectorAll("[data-atributo]").forEach(function (grupo) {
+      var nombre = grupo.dataset.atributo;
+      grupo.querySelectorAll(".opcion").forEach(function (boton) {
+        var tentativa = Object.assign({}, seleccion);
+        tentativa[nombre] = boton.dataset.valor;
+        var hay = VARIANTES.some(function (v) {
+          return Object.keys(tentativa).every(function (n) { return v.atributos[n] === tentativa[n]; })
+            && v.disponible;
+        });
+        boton.disabled = !hay;
+      });
+    });
+  }
+
+  document.querySelectorAll("[data-atributo] .opcion").forEach(function (boton) {
+    boton.addEventListener("click", function () {
+      var grupo = boton.closest("[data-atributo]");
+      var nombre = grupo.dataset.atributo;
+      var yaEstaba = seleccion[nombre] === boton.dataset.valor;
+
+      grupo.querySelectorAll(".opcion").forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+
+      if (yaEstaba) {
+        delete seleccion[nombre];
+      } else {
+        seleccion[nombre] = boton.dataset.valor;
+        boton.setAttribute("aria-pressed", "true");
+      }
+      refrescar();
+    });
+  });
+
+  $agregar.addEventListener("click", function () {
+    var codigo = TIENE_VARIANTES ? (elegida && elegida.item_code) : CODIGO_SIMPLE;
+    if (!codigo) { return; }
+    Antojate.Carrito.agregar(codigo, cantidad);
+    $agregar.textContent = "Agregado ✓";
+    setTimeout(function () { $agregar.textContent = "Agregar al carrito"; }, 1400);
+  });
+
+  if (TIENE_VARIANTES) { refrescar(); }
+  else if (!DISPONIBLE_SIMPLE) { $agregar.disabled = true; }
+})();
+</script>
+{% endblock %}

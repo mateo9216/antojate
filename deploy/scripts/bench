@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Atajo para correr bench contra el sitio sin escribir el docker compose exec.
+#   ./scripts/bench migrate
+#   ./scripts/bench console
+set -euo pipefail
+cd "$(dirname "$0")/.."
+set -a; . ./.env 2>/dev/null || true; set +a
+exec docker compose exec backend bench --site "${SITE_NAME:-antojate.localhost}" "$@"
